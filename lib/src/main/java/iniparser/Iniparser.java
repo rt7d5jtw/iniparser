@@ -11,6 +11,10 @@ import java.io.InputStream;
 
 public class Iniparser {
 
+  /**
+   * HashMap that holds a HashMap to store each section of
+   * the ini-file in a HashMap.
+   */
   class IniMap extends HashMap<String, Map<String, String>> {
     public IniMap() {
       super();

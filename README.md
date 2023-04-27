@@ -22,3 +22,5 @@ Note: This parser also allows for inline comments!
   - Key: the part before the first `=` (trimmed of whitespace)
   - Value: the part after the first `=` (trimmed of whitespace)
 
+
+The values are stored in IniMap class that the `parse` method returns, that is just a HashMap that stores another HashMap by sections.
