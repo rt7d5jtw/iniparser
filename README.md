@@ -6,6 +6,10 @@
 
 `$ ./gradlew check --info`
 
+or
+
+`$ gradle test --tests IniparserTest.fileTest`
+
 ### Requirements
 
 * Java 17

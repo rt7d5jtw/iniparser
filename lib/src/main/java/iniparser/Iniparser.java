@@ -2,10 +2,11 @@ package iniparser;
 
 import java.util.HashMap;
 import java.util.Map;
-
+import java.util.Optional;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -28,63 +29,75 @@ public class Iniparser {
     }
   };
 
-  private IniMap iniMap = new IniMap();
-  private String src = "";
+  private Optional<IniMap> iniMap = Optional.empty();
+  private Optional<String> src;
   private Integer cursor = 0;
   private Integer line = 0;
   private String currentSection;
 
-  public IniMap parse(String source) {
-    Path filepath = Paths.get(source);
-    try {
-      src = Files.readString(filepath);
-      while (!isAtEOF()) {
-        switch (peek()) {
-          case '\n' -> {
-            this.line++;
-            this.cursor++;
-            break;
-          }
-          case '[' -> {
-            this.cursor++;
-            String section = "";
-            while (peek() != ']') {
-              section += peek();
-              this.cursor++;
-            }
+  /**
+   * Paths: https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/nio/file/Paths.html
+   * Files: https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/nio/file/Files.html
+   * @throws IOException
+   * */
+  public void setSource(String filepath) throws IOException {
+    // Resolved system dependent filepath
+    Path path = Paths.get(filepath);
+    src = Optional.of(Files.readString(path));
+  }
 
-            Map<String, String> sectionMap = new HashMap<>();
-            iniMap.put(section, sectionMap);
-
-            //System.out.println("Section found! " + section);
-            // Mark this as the current section for key-value parsing
-            this.currentSection = section;
-            break;
-          }
-          case ';', '#' -> {
-            //System.out.println(peek());
-            readComment();
-            this.cursor++; // Move cursor out of the comment
-            break;
-          }
-          default -> {
-            if (Character.isAlphabetic(peek())) {
-              readKVPair();
-            }
-
-            if (Character.isDigit(peek())) {
-              // System.out.println(peek());
-            }
-
-            this.cursor++;
-          }
-        }
-      }
-    } catch (IOException ex) {
-      ex.printStackTrace();
+  public Optional<IniMap> parse(String filepath) {
+    if (src.isEmpty()) { // If source has not been set, return empty map
+      return iniMap;
     }
 
-    // Reset state of the parser
+    // Initialize Map for the inifile
+    iniMap = Optional.of(new IniMap());
+
+    while (!isAtEOF()) {
+      switch (peek()) {
+        case '\n' -> {
+          this.line++;
+          this.cursor++;
+          break;
+        }
+        case '[' -> {
+          this.cursor++;
+          String section = "";
+          while (peek() != ']') {
+            section += peek();
+            this.cursor++;
+          }
+
+          Map<String, String> sectionMap = new HashMap<>();
+          iniMap.get().put(section, sectionMap);
+
+          //System.out.println("Section found! " + section);
+          // Mark this as the current section for key-value parsing
+          this.currentSection = section;
+          break;
+        }
+        case ';', '#' -> {
+          //System.out.println(peek());
+          readComment();
+          this.cursor++; // Move cursor out of the comment
+          break;
+        }
+        default -> {
+          if (Character.isAlphabetic(peek())) {
+            readKVPair();
+          }
+
+          if (Character.isDigit(peek())) {
+            // System.out.println(peek());
+          }
+
+          this.cursor++;
+        }
+      }
+    }
+
+    // Reset the state of the parser
     this.reset();
 
     return iniMap;
@@ -137,21 +150,21 @@ public class Iniparser {
     value = value.trim();
 
     // Get the current map of the section
-    Map<String, String> section = iniMap.get(this.currentSection);
+    Map<String, String> section = iniMap.get().get(this.currentSection);
     section.put(key, value);
-    iniMap.put(this.currentSection, section);
+    iniMap.get().put(this.currentSection, section);
   }
 
   public char peekAhead() {
-    return this.src.charAt(this.cursor + 1);
+    return this.src.get().charAt(this.cursor + 1);
   }
 
   public char peek() {
-    return this.src.charAt(this.cursor);
+    return this.src.get().charAt(this.cursor);
   }
 
   public boolean isAtEOF() {
-    return this.cursor >= this.src.length();
+    return this.cursor >= this.src.get().length();
   }
 
   /**
@@ -160,13 +173,7 @@ public class Iniparser {
   public void reset() {
     this.cursor = 0;
     this.line = 1;
-    this.src = "";
+    this.src = Optional.empty();
     this.currentSection = "";
-  }
-
-  public InputStream loadFileFromResources(final String fileName) {
-    return this.getClass()
-        .getClassLoader()
-        .getResourceAsStream(fileName);
   }
 }
