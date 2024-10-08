@@ -1,10 +1,18 @@
 ### How to build?
 
-`$ mvn compile`
+Maven: `$ mvn compile`
+
+Makefile: `$ make`
 
 ### How to run tests?
 
-`$ mvn verify`
+Maven: `$ mvn verify`
+
+1. Install junit to libs/ directory first, if not installed already: `make install-test-dependencies`
+2. Compile the program and build to jar `make compile jar`
+3. Run tests: `$ make run-tests`
+
+If you already have junit 4.8.2 installed and jar built for the program, you can skip to step 3 by just running the `run-tests` recipe.
 
 ### About the parser
 

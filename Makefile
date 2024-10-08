@@ -16,9 +16,12 @@ MAIN_CLASS            := iniparser/Iniparser
 SOURCE_DIR            := src
 OUTPUT_DIR            := classes
 LIB_DIR               := libs
+BUILD_DIR             := build
 REPO_URI              := repo1.maven.org/maven2
 
-SOURCE_PATH           := src/main/java/iniparser
+TEST_MAIN_CLASS       := $(SOURCE_DIR)/test/java/org/iniparser/AppTest.java
+
+SOURCE_PATH           := src/main/java/org/iniparser
 RESOURCE_PATH         := src/main/resources
 
 # MANIFEST.MF Definitions
@@ -45,20 +48,21 @@ JAVA                  := /usr/bin/java
 JAVAC                 := /usr/bin/javac
 JFLAGS                := -sourcepath $(SOURCE_DIR) -d $(OUTPUT_DIR) -source 17 -Werror -Xlint:all -g
 
-MANIFEST              := lib/src/main/manifest/MANIFEST.MF
+MANIFEST              := src/main/manifest/MANIFEST.MF
 JAR_FILE              := iniparser-1.0.jar
 JAR                   := jar
 JARFLAGS              := cvfm build/$(JAR_FILE) $(MANIFEST)
 
 JUNIT_VERSION         := 4.8.2
-JUNIT_JAR             := org/junit/junit/$(JUNIT_VERSION)/junit-$(JUNIT_VERSION).jar
+JUNIT_JAR             := junit/junit/$(JUNIT_VERSION)/junit-$(JUNIT_VERSION).jar
+JUNIT_MAIN            := org.junit.runner.JUnitCore
 
 all: compile jar
 
 run:
 	$(JAVA) -jar build/$(JAR_FILE)
 
-runraw:
+run-verbose:
 	$(JAVA) -showversion -verbose:gc -cp ./classes $(MAIN_CLASS)
 
 install-test-dependencies:
@@ -69,19 +73,16 @@ install-test-dependencies:
 
 build: compile
 
+# Compiles and runs tests
+#
 # NOTE: You need jar of the library itself in libs too, libs/iniparser.jar
 #				this currently does not work because I cant get the main class to run
-compile-tests: $(SOURCES)
-	javac \
-		-sourcepath src \
-		-d classes \
-		-cp $(LIBS) \
-		src/test/java/org/iniparser/AppTest.java
-	java -cp libs/junit-4.8.2.jar:classes org.iniparser.AppTest
-	#@mkdir -vp $(OUTPUT_DIR)
-	#$(JAVAC) $(JFLAGS) -cp $(LIBS) $(SOURCES)
-	#@echo "Copying resources over from src/main/resources to classes/ ..."
-	#$(COPY_CMD) $(COPY_FLAGS) $(RESOURCES) $(OUTPUT_DIR)
+#
+#				Run `compile` and `jar` before running this so that the iniparser.jar is included!
+#				If junit-4.8.2 is not installed in libs/ directory, run `install-test-dependencies`
+run-tests: $(SOURCES)
+	$(JAVAC) $(JFLAGS) -cp $(LIBS) $(TEST_MAIN_CLASS)
+	java -cp $(LIBS) $(JUNIT_MAIN) org.iniparser.AppTest
 
 compile: $(SOURCES)
 	@mkdir -vp $(OUTPUT_DIR)
@@ -92,6 +93,8 @@ compile: $(SOURCES)
 jar: $(OUTPUT_DIR)
 	@mkdir -vp build/
 	$(JAR) $(JARFLAGS) -C $(OUTPUT_DIR) .
+	@echo "Copying iniparser.jar over to libs/ so it can be used for tests"
+	$(COPY_CMD) $(BUILD_DIR)/$(JAR_FILE) libs
 
 inspect: $(OUTPUT_DIR)
 	@echo Sources: $(SOURCES)
@@ -122,4 +125,4 @@ clean: $(CLASSES) build
 classpath:
 	@echo "export CLASSPATH='$(CLASSPATH)'"
 
-.PHONY: all run inspect classpath update-classpath clean format jar compile runraw view-jar install-dependencies
+.PHONY: all run inspect classpath update-classpath clean format jar compile run-verbose view-jar install-test-dependencies
