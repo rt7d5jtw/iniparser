@@ -1,18 +1,10 @@
 ### How to build?
 
-`$ ./gradlew build`
+`$ mvn compile`
 
 ### How to run tests?
 
-`$ ./gradlew check --info`
-
-or
-
-`$ gradle test --tests IniparserTest.fileTest`
-
-### Requirements
-
-* Java 17
+`$ mvn verify`
 
 ### About the parser
 
@@ -28,3 +20,8 @@ Note: This parser also allows for inline comments!
 
 
 The values are stored in IniMap class that the `parse` method returns, that is just a HashMap that stores another HashMap by sections.
+
+### Requirements
+
+* Java 17
+
