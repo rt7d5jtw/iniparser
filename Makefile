@@ -1,56 +1,57 @@
 # NOTE: curl is used to download the dependencies !
 
-# 	copy:		https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/copy
-# 	xcopy: 	https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/xcopy
-# 	cp: 		https://man7.org/linux/man-pages/man1/cp.1.html
+# copy:   https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/copy
+# xcopy:  https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/xcopy
+# cp:     https://man7.org/linux/man-pages/man1/cp.1.html
+
 ifeq ($(OS),Windows_NT)
-    COPY_CMD 		:= xcopy
-		COPY_FLAGS 	:= /e/q
+    COPY_CMD    := xcopy
+    COPY_FLAGS  := /e/q
 else
-    COPY_CMD 		:= cp
-		COPY_FLAGS 	:= --verbose --recursive
+    COPY_CMD    := cp
+    COPY_FLAGS  := --verbose --recursive
 endif
 
-MAIN_CLASS 				:= iniparser/Iniparser
-SOURCE_DIR 				:= lib/src
-OUTPUT_DIR 				:= classes
-LIB_DIR 					:= libs
-REPO_URI					:= repo1.maven.org/maven2
+MAIN_CLASS      := iniparser/Iniparser
+SOURCE_DIR      := src
+OUTPUT_DIR      := classes
+LIB_DIR         := libs
+REPO_URI        := repo1.maven.org/maven2
 
-SOURCE_PATH				:= lib/src/main/java/iniparser
-RESOURCE_PATH			:= lib/src/main/resources
+SOURCE_PATH     := src/main/java/iniparser
+RESOURCE_PATH   := src/main/resources
 
 # MANIFEST.MF Definitions
-MANIFEST_VERSION 			:= 1.0
-MANIFEST_MAIN_CLASS		:= iniparser.Iniparser
-MANIFEST_CREATED_BY		:= 17.0.3
+MANIFEST_VERSION     := 1.0
+MANIFEST_MAIN_CLASS  := org.iniparser.Iniparser
+MANIFEST_CREATED_BY  := 17.0.3
 
 # source: https://stackoverflow.com/questions/10571658/gnu-make-convert-spaces-to-colons
 # literal space
-SPACE									:= $(subst ,, )
+SPACE                 := $(subst ,, )
 
 # Finds the source files with .java extension under src/main/java/io/what/jhttpd
-SOURCES 							:= $(wildcard $(SOURCE_PATH)/*.java)
+SOURCES               := $(wildcard $(SOURCE_PATH)/*.java)
 
 # Finds jar's under libs/ directory and formats a colon to end of each jar.
 # On Windows, use a semicolon (;) instead of a colon as a separator.
-LIBS 									:= "$(subst $(SPACE),:,$(wildcard libs/*.jar)):"
+LIBS                  := "$(subst $(SPACE),:,$(wildcard libs/*.jar)):"
 
 # Finds the resources files under src/main/resources/
-RESOURCES 						:= $(wildcard $(RESOURCE_PATH)/*)
+RESOURCES             := $(wildcard $(RESOURCE_PATH)/*)
 
 # Java tools
-JAVA 				:= /usr/bin/java
-JAVAC 			:= /usr/bin/javac
-JFLAGS 			:= -sourcepath $(SOURCE_DIR) -d $(OUTPUT_DIR) -source 17 -Werror -Xlint:all -g
+JAVA                  := /usr/bin/java
+JAVAC                  := /usr/bin/javac
+JFLAGS                := -sourcepath $(SOURCE_DIR) -d $(OUTPUT_DIR) -source 17 -Werror -Xlint:all -g
 
-MANIFEST 		:= lib/src/main/manifest/MANIFEST.MF
-JAR_FILE 		:= iniparser-1.0.jar
-JAR 				:= jar
-JARFLAGS 		:= cvfm build/$(JAR_FILE) $(MANIFEST)
+MANIFEST              := lib/src/main/manifest/MANIFEST.MF
+JAR_FILE              := iniparser-1.0.jar
+JAR                   := jar
+JARFLAGS              := cvfm build/$(JAR_FILE) $(MANIFEST)
 
-JUNIT_VERSION := 4.8.2
-JUNIT_JAR			:= org/junit/junit/$(JUNIT_VERSION)/junit-$(JUNIT_VERSION).jar
+JUNIT_VERSION         := 4.8.2
+JUNIT_JAR             := org/junit/junit/$(JUNIT_VERSION)/junit-$(JUNIT_VERSION).jar
 
 all: compile jar
 
@@ -69,7 +70,7 @@ install-test-dependencies:
 build: compile
 
 # NOTE: You need jar of the library itself in libs too, libs/iniparser.jar
-# 			this currently does not work because I cant get the main class to run
+#				this currently does not work because I cant get the main class to run
 compile-tests: $(SOURCES)
 	javac \
 		-sourcepath src \
