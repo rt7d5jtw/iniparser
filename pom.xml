@@ -4,6 +4,8 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
+  <!-- List dependencies: `mvn dependency:tree` -->
+
   <groupId>org.iniparser</groupId>
   <artifactId>iniparser</artifactId>
   <version>1.0</version>
@@ -19,11 +21,29 @@
     <maven.compiler.target>17</maven.compiler.target>
   </properties>
 
+  <!--
+  $ cloc junit
+      28 text files.
+      27 unique files.
+      3 files ignored.
+
+  junit-4.8.2, Lines of Code, NOTE: No dependencies
+
+  github.com/AlDanial/cloc v 1.96  T=0.03 s (1050.9 files/s, 90958.8 lines/s)
+  ———————————————————————————————————————————————————————————————————————————————
+  Language                     files          blank        comment           code
+  ———————————————————————————————————————————————————————————————————————————————
+  Java                            27            241            689           1407
+  ———————————————————————————————————————————————————————————————————————————————
+  SUM:                            27            241            689           1407
+  ———————————————————————————————————————————————————————————————————————————————
+  -->
+
   <dependencies>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.11</version>
+      <version>4.8.2</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

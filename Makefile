@@ -41,25 +41,16 @@ RESOURCES 						:= $(wildcard $(RESOURCE_PATH)/*)
 
 # Java tools
 JAVA 				:= /usr/bin/java
-JAVAC 			:= /usr/bin/javac 
+JAVAC 			:= /usr/bin/javac
 JFLAGS 			:= -sourcepath $(SOURCE_DIR) -d $(OUTPUT_DIR) -source 17 -Werror -Xlint:all -g
+
 MANIFEST 		:= lib/src/main/manifest/MANIFEST.MF
 JAR_FILE 		:= iniparser-1.0.jar
 JAR 				:= jar
 JARFLAGS 		:= cvfm build/$(JAR_FILE) $(MANIFEST)
 
-JUNIT_JUPITER_VERSION 			:= 5.9.1
-JUNIT_JUPITER_JAR						:= org/junit/jupiter/junit-jupiter/$(JUNIT_JUPITER_VERSION)/junit-jupiter-$(JUNIT_JUPITER_VERSION).jar
-JUNIT_JUPITER_API_JAR				:= org/junit/jupiter/junit-jupiter-api/$(JUNIT_JUPITER_VERSION)/junit-jupiter-api-$(JUNIT_JUPITER_VERSION).jar
-JUNIT_JUPITER_ENGINE_JAR		:= org/junit/jupiter/junit-jupiter-engine/$(JUNIT_JUPITER_VERSION)/junit-jupiter-engine-$(JUNIT_JUPITER_VERSION).jar
-
-JUNIT_PLATFORM_VERSION 			:= 1.11.2
-JUNIT_PLATFORM_ENGINE_JAR		:= org/junit/platform/junit-platform-engine/$(JUNIT_PLATFORM_VERSION)/junit-platform-engine-$(JUNIT_PLATFORM_VERSION).jar
-JUNIT_PLATFORM_LAUNCHER_JAR	:= org/junit/platform/junit-platform-launcher/$(JUNIT_PLATFORM_VERSION)/junit-platform-launcher-$(JUNIT_PLATFORM_VERSION).jar
-
-# Transitive depedency of JUNIT JUPITER
-APIGUARDIAN_API_VERSION 		:=  1.1.2
-APIGUARDIAN_API_JAR 				:= org/apiguardian/apiguardian-api/$(APIGUARDIAN_API_VERSION)/apiguardian-api-$(APIGUARDIAN_API_VERSION).jar
+JUNIT_VERSION := 4.8.2
+JUNIT_JAR			:= org/junit/junit/$(JUNIT_VERSION)/junit-$(JUNIT_VERSION).jar
 
 all: compile jar
 
@@ -71,13 +62,8 @@ runraw:
 
 install-test-dependencies:
 	@echo "Installing test dependencies ..."
-	curl -v -fL https://$(REPO_URI)/$(JUNIT_JUPITER_JAR) --output $(LIB_DIR)/junit-jupiter-$(JUNIT_JUPITER_VERSION).jar
-	curl -v -fL https://$(REPO_URI)/$(JUNIT_JUPITER_API_JAR) --output $(LIB_DIR)/junit-jupiter-api-$(JUNIT_JUPITER_VERSION).jar
-	curl -v -fL https://$(REPO_URI)/$(JUNIT_JUPITER_ENGINE_JAR) --output $(LIB_DIR)/junit-jupiter-engine-$(JUNIT_JUPITER_VERSION).jar
-	curl -v -fL https://$(REPO_URI)/$(JUNIT_PLATFORM_ENGINE_JAR) --output $(LIB_DIR)/junit-platform-engine-$(JUNIT_PLATFORM_VERSION).jar
-	curl -v -fL https://$(REPO_URI)/$(JUNIT_PLATFORM_LAUNCHER_JAR) --output $(LIB_DIR)/junit-platform-launcher-$(JUNIT_PLATFORM_VERSION).jar
-	curl -v -fL https://$(REPO_URI)/$(APIGUARDIAN_API_JAR) --output $(LIB_DIR)/apiguardian-api-$(APIGUARDIAN_API_VERSION).jar
-	@echo "NOTE: CHANGES TO CLASS PATH HAVE TO BE WRITTEN IN $(MANIFEST) !"
+	curl -v -fL https://$(REPO_URI)/$(JUNIT_JAR) --output $(LIB_DIR)/junit-$(JUNIT_VERSION).jar
+	echo "NOTE: CHANGES TO CLASS PATH HAVE TO BE WRITTEN IN $(MANIFEST) !"
 	@echo "To update the class path, run 'update-classpath' recipe"
 
 build: compile
@@ -86,11 +72,11 @@ build: compile
 # 			this currently does not work because I cant get the main class to run
 compile-tests: $(SOURCES)
 	javac \
-		-sourcepath lib/src \
+		-sourcepath src \
 		-d classes \
 		-cp $(LIBS) \
-		lib/src/test/java/iniparser/IniparserTest.java
-	java -cp libs/iniparser-1.0.jar:classes iniparser.IniparserTest
+		src/test/java/org/iniparser/AppTest.java
+	java -cp libs/junit-4.8.2.jar:classes org.iniparser.AppTest
 	#@mkdir -vp $(OUTPUT_DIR)
 	#$(JAVAC) $(JFLAGS) -cp $(LIBS) $(SOURCES)
 	#@echo "Copying resources over from src/main/resources to classes/ ..."
