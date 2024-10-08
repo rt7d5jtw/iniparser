@@ -5,26 +5,26 @@
 # cp:     https://man7.org/linux/man-pages/man1/cp.1.html
 
 ifeq ($(OS),Windows_NT)
-    COPY_CMD    := xcopy
-    COPY_FLAGS  := /e/q
+    COPY_CMD          := xcopy
+    COPY_FLAGS        := /e/q
 else
-    COPY_CMD    := cp
-    COPY_FLAGS  := --verbose --recursive
+    COPY_CMD          := cp
+    COPY_FLAGS        := --verbose --recursive
 endif
 
-MAIN_CLASS      := iniparser/Iniparser
-SOURCE_DIR      := src
-OUTPUT_DIR      := classes
-LIB_DIR         := libs
-REPO_URI        := repo1.maven.org/maven2
+MAIN_CLASS            := iniparser/Iniparser
+SOURCE_DIR            := src
+OUTPUT_DIR            := classes
+LIB_DIR               := libs
+REPO_URI              := repo1.maven.org/maven2
 
-SOURCE_PATH     := src/main/java/iniparser
-RESOURCE_PATH   := src/main/resources
+SOURCE_PATH           := src/main/java/iniparser
+RESOURCE_PATH         := src/main/resources
 
 # MANIFEST.MF Definitions
-MANIFEST_VERSION     := 1.0
-MANIFEST_MAIN_CLASS  := org.iniparser.Iniparser
-MANIFEST_CREATED_BY  := 17.0.3
+MANIFEST_VERSION      := 1.0
+MANIFEST_MAIN_CLASS   := org.iniparser.Iniparser
+MANIFEST_CREATED_BY   := 17.0.3
 
 # source: https://stackoverflow.com/questions/10571658/gnu-make-convert-spaces-to-colons
 # literal space
@@ -42,7 +42,7 @@ RESOURCES             := $(wildcard $(RESOURCE_PATH)/*)
 
 # Java tools
 JAVA                  := /usr/bin/java
-JAVAC                  := /usr/bin/javac
+JAVAC                 := /usr/bin/javac
 JFLAGS                := -sourcepath $(SOURCE_DIR) -d $(OUTPUT_DIR) -source 17 -Werror -Xlint:all -g
 
 MANIFEST              := lib/src/main/manifest/MANIFEST.MF
