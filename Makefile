@@ -44,8 +44,8 @@ LIBS                  := "$(subst $(SPACE),:,$(wildcard libs/*.jar)):"
 RESOURCES             := $(wildcard $(RESOURCE_PATH)/*)
 
 # Java tools
-JAVA                  := /usr/bin/java
-JAVAC                 := /usr/bin/javac
+JAVA                  := java
+JAVAC                 := javac
 JFLAGS                := -sourcepath $(SOURCE_DIR) -d $(OUTPUT_DIR) -source 17 -Werror -Xlint:all -g
 
 MANIFEST              := src/main/manifest/MANIFEST.MF
@@ -118,7 +118,7 @@ sources:
 view-jar:
 	jar vtf build/$(JAR_FILE)
 
-clean: $(CLASSES) build
+clean: $(CLASSES)
 	@rm -rf classes
 	@rm -rf build
 
