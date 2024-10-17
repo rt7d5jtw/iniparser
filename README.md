@@ -6,13 +6,14 @@ Makefile: `$ make`
 
 ### How to run tests?
 
-Maven: `$ mvn verify`
+with Maven: `$ mvn verify`
 
-1. Install junit to libs/ directory first, if not installed already: `make install-test-dependencies`
-2. Compile the program and build to jar `make compile jar`
-3. Run tests: `$ make run-tests`
+with Makefile:
+  1. Install junit to libs/ directory first, if not installed already: `make install-test-dependencies`
+  2. Compile the program and build to jar `make compile jar`
+  3. Run tests: `$ make run-tests`
 
-If you already have junit 4.8.2 installed and jar built for the program, you can skip to step 3 by just running the `run-tests` recipe.
+  NOTE for Makefile: If you already have junit 4.8.2 installed and jar built for the program, you can skip to step 3 by just running the `run-tests` recipe.
 
 ### About the parser
 
@@ -32,4 +33,3 @@ The values are stored in IniMap class that the `parse` method returns, that is j
 ### Requirements
 
 * Java 17
-
