@@ -82,7 +82,7 @@ build: compile
 #				If junit-4.8.2 is not installed in libs/ directory, run `install-test-dependencies`
 run-tests: $(SOURCES)
 	$(JAVAC) $(JFLAGS) -cp $(LIBS) $(TEST_MAIN_CLASS)
-	java -cp $(LIBS) $(JUNIT_MAIN) org.iniparser.AppTest
+	java -cp $(LIBS)$(OUTPUT_DIR) $(JUNIT_MAIN) org.iniparser.AppTest
 
 compile: $(SOURCES)
 	@mkdir -vp $(OUTPUT_DIR)
