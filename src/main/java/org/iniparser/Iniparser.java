@@ -10,13 +10,6 @@ import java.nio.file.NoSuchFileException;
 import java.io.IOException;
 import java.io.InputStream;
 
-//public class App 
-//{
-//    public static void main( String[] args )
-//    {
-//        System.out.println( "Hello World!" );
-//    }
-//}
 public class Iniparser {
 
   /**
