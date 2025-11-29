@@ -1,35 +1,39 @@
-### How to build?
-
-Maven: `$ mvn compile`
-
-Makefile: `$ make`
-
-### How to run tests?
-
-with Maven: `$ mvn verify`
-
-with Makefile:
-  1. Install junit to libs/ directory first, if not installed already: `make install-test-dependencies`
-  2. Compile the program and build to jar `make compile jar`
-  3. Run tests: `$ make run-tests`
-
-  NOTE for Makefile: If you already have `junit-4.8.2.jar` and `iniparser.jar` files in libs/ for the tests, you can skip to step 3 by just running the `run-tests` recipe.
-
-### About the parser
-
-Since INI is an informal format, I decided to go with the EditorConfig-like specification [File Format](https://spec.editorconfig.org/#file-format).
-
-Note: This parser also allows for inline comments!
-
-* Comments start with `;` or `#`
-* Section headers start with `[` and ends with a `]`
-* Key-Value Pair contains a key and a value, separated by an `=`.
-  - Key: the part before the first `=` (trimmed of whitespace)
-  - Value: the part after the first `=` (trimmed of whitespace)
-
-
-The values are stored in IniMap class that the `parse` method returns, that is just a HashMap that stores another HashMap by sections.
+# INI File Parser (Java 17)
 
 ### Requirements
 
 * Java 17
+
+---
+
+### How to build?
+
+* **Maven:** `$ mvn compile`
+* **Makefile:** `$ make compile` (or just `$ make` which calls `compile` and `jar`)
+
+---
+
+### How to run tests?
+
+The project uses JUnit 4 for unit testing.
+
+* **With Maven (Recommended):** `$ mvn test` (or `$ mvn verify` for the full lifecycle)
+* **With Makefile (Manual Setup Required):**
+    1.  Install the JUnit dependency: `make install-test-dependencies`
+    2.  Run the tests: `$ make run-tests`
+
+> **Note for Makefile:** The `run-tests` command requires the `junit-4.8.2.jar` file to be present in the `libs/` directory.
+
+---
+
+### About the Parser
+
+This parser implements key-value pair and section parsing inspired by the [EditorConfig File Format Specification](https://spec.editorconfig.org/#file-format).
+
+The parser also allows for inline comments and handles multiline values.
+
+* **Comments** start with `;` or `#` (inline comments are ignored at the end of a value).
+* **Section headers** start with `[` and end with a `]`.
+* **Key-Value Pair** contains a key and a value, separated by an `=`.
+
+The parsed values are stored in an **`IniFile`** object, which is returned by the `parse` method. The `IniFile` object safely encapsulates the configuration data (`HashMap<String, HashMap<String, String>>`) and provides a clean method (`getValue()`) for retrieval.
