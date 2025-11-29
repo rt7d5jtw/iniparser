@@ -10,7 +10,6 @@ import java.io.IOException;
 
 public class Iniparser {
 
-  // Better Practice: Composition (Recommended)
   public class IniFile {
       private final Map<String, Map<String, String>> sections;
 
@@ -18,13 +17,12 @@ public class Iniparser {
           this.sections = sections;
       }
 
-      // Public getter methods
       public String getValue(String section, String key) {
           Map<String, String> sectionMap = sections.get(section);
           if (sectionMap != null) {
               return sectionMap.get(key);
           }
-          return null; // Return null if section or key not found
+          return null;
       }
   }
 
@@ -32,17 +30,6 @@ public class Iniparser {
   private Integer cursor = 0;
   private Integer line   = 0;
   private String currentSection;
-
-  /**
-   * Paths: https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/nio/file/Paths.html
-   * Files: https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/nio/file/Files.html
-   * @throws IOException
-   * */
-  public void setSource(String filepath) throws IOException {
-    // Resolved system dependent filepath
-    Path path = Paths.get(filepath);
-    src = Optional.of(Files.readString(path));
-  }
 
   /**
    * Parses the INI file contents read from the given filepath.
@@ -81,6 +68,7 @@ public class Iniparser {
 
           // Mark this as the current section for key-value parsing
           this.currentSection = section;
+
           //this.cursor++; // Move past the ']' character
           break;
         }
