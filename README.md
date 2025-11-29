@@ -36,4 +36,4 @@ The parser also allows for inline comments and handles multiline values.
 * **Section headers** start with `[` and end with a `]`.
 * **Key-Value Pair** contains a key and a value, separated by an `=`.
 
-The parsed values are stored in an **`IniFile`** object, which is returned by the `parse` method. The `IniFile` object safely encapsulates the configuration data (`HashMap<String, HashMap<String, String>>`) and provides a clean method (`getValue()`) for retrieval.
+The parsed values are stored in an **`IniFile`** object, which is returned by the `parse` method. The `IniFile` object encapsulates the configuration data (`HashMap<String, HashMap<String, String>>`) and provides a method (`getValue()`) for retrieval.
