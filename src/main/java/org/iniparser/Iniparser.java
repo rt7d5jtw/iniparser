@@ -1,5 +1,6 @@
 package org.iniparser;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -11,19 +12,15 @@ import java.io.IOException;
 public class Iniparser {
 
   public class IniFile {
-      private final Map<String, Map<String, String>> sections;
+    private final Map<String, Map<String, String>> sections;
 
-      public IniFile(Map<String, Map<String, String>> sections) {
-          this.sections = sections;
-      }
+    public IniFile(Map<String, Map<String, String>> sections) {
+      this.sections = sections;
+    }
 
-      public String getValue(String section, String key) {
-          Map<String, String> sectionMap = sections.get(section);
-          if (sectionMap != null) {
-              return sectionMap.get(key);
-          }
-          return null;
-      }
+    public String getValue(String section, String key) {
+      return sections.getOrDefault(section, Collections.emptyMap()).get(key);
+    }
   }
 
   private Optional<String> src;
@@ -39,9 +36,9 @@ public class Iniparser {
    */
   public Optional<IniFile> parse(String filepath) throws IOException {
     Path path         = Paths.get(filepath);
-    String srcContent = Files.readString(path);
+    String src        = Files.readString(path);
 
-    this.src    = Optional.of(srcContent);
+    this.src    = Optional.of(src);
     this.cursor = 0;
 
     Map<String, Map<String, String>> iniMap = new HashMap<>();
@@ -83,9 +80,9 @@ public class Iniparser {
             readKVPair(iniMap);
           }
 
-          if (Character.isDigit(peek())) {
-            // System.out.println(peek());
-          }
+          //if (Character.isDigit(peek())) {
+          //  System.out.println(peek());
+          //}
 
           this.cursor++;
         }
