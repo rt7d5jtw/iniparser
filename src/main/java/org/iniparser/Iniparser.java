@@ -66,7 +66,7 @@ public class Iniparser {
           // Mark this as the current section for key-value parsing
           this.currentSection = section;
 
-          //this.cursor++; // Move past the ']' character
+          this.cursor++; // Move past the ']' character
           break;
         }
         case ';', '#' -> {
