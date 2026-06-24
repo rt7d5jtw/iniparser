@@ -23,9 +23,9 @@ public class Iniparser {
     }
   }
 
-  private Optional<String> src;
-  private Integer cursor = 0;
-  private Integer line   = 0;
+  private Optional<String> src = Optional.empty();
+  private int cursor = 0;
+  private int line   = 0;
   private String currentSection;
 
   /**
@@ -35,10 +35,10 @@ public class Iniparser {
    * @throws IOException If the file cannot be read.
    */
   public Optional<IniFile> parse(String filepath) throws IOException {
-    Path path         = Paths.get(filepath);
-    String src        = Files.readString(path);
+    Path path    = Paths.get(filepath);
+    String fileSrc = Files.readString(path);
 
-    this.src    = Optional.of(src);
+    this.src    = Optional.of(fileSrc);
     this.cursor = 0;
 
     Map<String, Map<String, String>> iniMap = new HashMap<>();
@@ -48,43 +48,34 @@ public class Iniparser {
         case '\n' -> {
           this.line++;
           this.cursor++;
-          break;
         }
         case '[' -> {
           this.cursor++;
-          String section = "";
-          while (peek() != ']') {
-            section += peek();
+          StringBuilder sectionBuilder = new StringBuilder();
+
+          while (!isAtEOF() && peek() != ']') {
+            sectionBuilder.append(peek());
             this.cursor++;
           }
 
+          String section = sectionBuilder.toString();
           Map<String, String> sectionMap = new HashMap<>();
           iniMap.put(section, sectionMap);
 
-          //System.out.println("Section found! " + section);
-
-          // Mark this as the current section for key-value parsing
           this.currentSection = section;
 
-          this.cursor++; // Move past the ']' character
-          break;
+          if (!isAtEOF()) this.cursor++; // Move past the ']' character safely
         }
         case ';', '#' -> {
-          //System.out.println(peek());
           readComment();
-          this.cursor++; // Move cursor out of the comment
-          break;
+          if (!isAtEOF()) this.cursor++; // Move cursor out of the comment safely
         }
         default -> {
           if (Character.isAlphabetic(peek())) {
             readKVPair(iniMap);
+          } else {
+            this.cursor++; // Ensure we always advance to avoid infinite loops
           }
-
-          //if (Character.isDigit(peek())) {
-          //  System.out.println(peek());
-          //}
-
-          this.cursor++;
         }
       }
     }
@@ -97,70 +88,65 @@ public class Iniparser {
   }
 
   public void readComment() {
-    while (peekAhead() != '\n') {
+    while (!isAtEOF() && peekAhead() != '\n' && peekAhead() != '\0') {
       this.cursor++;
     }
   }
 
   public void readKVPair(Map<String, Map<String, String>> iniMap) {
-    String key   = "";
-    String value = "";
+    StringBuilder keyBuilder = new StringBuilder();
+    StringBuilder valueBuilder = new StringBuilder();
 
-    while (peek() != '\n') {
+    while (!isAtEOF() && peek() != '\n') {
       // Read the key
-      while (peek() != '=') {
+      while (!isAtEOF() && peek() != '=') {
         if (!Character.isWhitespace(peek())) {
-          key += peek();
+          keyBuilder.append(peek());
         }
         this.cursor++;
       }
 
       // Read the value
-      if (peek() == '=') {
+      if (!isAtEOF() && peek() == '=') {
         this.cursor++; // Move cursor from `=`
-        while (peek() != '\n') {
+        while (!isAtEOF() && peek() != '\n') {
           // Skip comments
           if (peek() == ';' || peek() == '#') {
             readComment();
-            // Move away from them while loop without touching the cursor
             break;
           } else {
-            value += peek();
+            valueBuilder.append(peek());
           }
-
           this.cursor++;
         }
-
-        // Move away from the while loop without touching the cursor!
         break;
       }
 
-      // Move cursor to newline
-      this.cursor++;
+      if (!isAtEOF()) { this.cursor++; }
     }
 
-    // Trim all the whitespace from around the value (leading and trailing whitespaces)
-    value = value.trim();
+    String key = keyBuilder.toString();
+    String value = valueBuilder.toString().trim();
 
-    // Get the current map of the section
-    Map<String, String> section = iniMap.get(this.currentSection);
-
-    if (section != null) {
+    // Safely insert into the map
+    if (this.currentSection != null && iniMap.containsKey(this.currentSection)) {
+      Map<String, String> section = iniMap.get(this.currentSection);
       section.put(key, value);
-      iniMap.put(this.currentSection, section);
     }
   }
 
   public char peekAhead() {
+    if (this.cursor + 1 >= this.src.get().length()) { return '\0'; } // Prevents out-of-bounds on last char
     return this.src.get().charAt(this.cursor + 1);
   }
 
   public char peek() {
+    if (isAtEOF()) { return '\0'; }
     return this.src.get().charAt(this.cursor);
   }
 
   public boolean isAtEOF() {
-    return this.cursor >= this.src.get().length();
+    return !this.src.isPresent() || this.cursor >= this.src.get().length();
   }
 
   /**
@@ -170,6 +156,6 @@ public class Iniparser {
     this.cursor         = 0;
     this.line           = 1;
     this.src            = Optional.empty();
-    this.currentSection = "";
+    this.currentSection = null;
   }
 }
