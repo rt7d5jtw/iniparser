@@ -10,10 +10,7 @@
   <artifactId>iniparser</artifactId>
   <version>1.0</version>
   <packaging>jar</packaging>
-
-  <name>demolibrary</name>
-  <!-- FIXME change it to the project's website -->
-  <url>http://www.example.com</url>
+  <name>iniparser</name>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

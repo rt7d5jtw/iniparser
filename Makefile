@@ -5,17 +5,19 @@
 # cp:     https://man7.org/linux/man-pages/man1/cp.1.html
 
 ifeq ($(OS),Windows_NT)
-    COPY_CMD          := xcopy
-    COPY_FLAGS        := /e/q
+    COPY_CMD            := xcopy
+    COPY_FLAGS          := /e/q
+    CLASSPATH_SEPARATOR := ;
 else
-    COPY_CMD          := cp
-    COPY_FLAGS        := --verbose --recursive
+    COPY_CMD            := cp
+    COPY_FLAGS          := --verbose --recursive
+    CLASSPATH_SEPARATOR := :
 endif
 
 MAIN_CLASS            := iniparser/Iniparser
 SOURCE_DIR            := src
 OUTPUT_DIR            := classes
-LIB_DIR               := libs
+LIB_DIR               := lib
 BUILD_DIR             := build
 REPO_URI              := repo1.maven.org/maven2
 
@@ -36,9 +38,9 @@ SPACE                 := $(subst ,, )
 # Finds the source files with .java extension under src/main/java/io/what/jhttpd
 SOURCES               := $(wildcard $(SOURCE_PATH)/*.java)
 
-# Finds jar's under libs/ directory and formats a colon to end of each jar.
+# Finds jar's under lib/ directory and formats a colon to end of each jar.
 # On Windows, use a semicolon (;) instead of a colon as a separator.
-LIBS                  := "$(subst $(SPACE),:,$(wildcard libs/*.jar)):"
+LIBS                  := "$(subst $(SPACE),:,$(wildcard lib/*.jar)):"
 
 # Finds the resources files under src/main/resources/
 RESOURCES             := $(wildcard $(RESOURCE_PATH)/*)
@@ -68,21 +70,21 @@ run-verbose:
 install-test-dependencies:
 	@echo "Installing test dependencies ..."
 	curl -v -fL https://$(REPO_URI)/$(JUNIT_JAR) --output $(LIB_DIR)/junit-$(JUNIT_VERSION).jar
-	echo "NOTE: CHANGES TO CLASS PATH HAVE TO BE WRITTEN IN $(MANIFEST) !"
+	@echo "NOTE: CHANGES TO CLASS PATH HAVE TO BE WRITTEN IN $(MANIFEST) !"
 	@echo "To update the class path, run 'update-classpath' recipe"
 
 build: compile
 
 # Compiles and runs tests
 #
-# NOTE: You need jar of the library itself in libs too, libs/iniparser.jar
+# NOTE: You need jar of the library itself in lib too, lib/iniparser.jar
 #				this currently does not work because I cant get the main class to run
 #
 #				Run `compile` and `jar` before running this so that the iniparser.jar is included!
-#				If junit-4.8.2 is not installed in libs/ directory, run `install-test-dependencies`
+#				If junit-4.8.2 is not installed in lib/ directory, run `install-test-dependencies`
 run-tests: $(SOURCES)
-	$(JAVAC) $(JFLAGS) -cp $(LIBS) $(TEST_MAIN_CLASS)
-	java -cp $(LIBS)$(OUTPUT_DIR) $(JUNIT_MAIN) org.iniparser.AppTest
+	$(JAVAC) $(JFLAGS) -cp "$(LIBS)$(CLASSPATH_SEPARATOR)$(OUTPUT_DIR)" $(TEST_MAIN_CLASS)
+	$(JAVA) -cp "$(LIBS)$(CLASSPATH_SEPARATOR)src/test/java" $(JUNIT_MAIN) org.iniparser.AppTest
 
 compile: $(SOURCES)
 	@mkdir -vp $(OUTPUT_DIR)
@@ -93,8 +95,8 @@ compile: $(SOURCES)
 jar: $(OUTPUT_DIR)
 	@mkdir -vp build/
 	$(JAR) $(JARFLAGS) -C $(OUTPUT_DIR) .
-	@echo "Copying iniparser.jar over to libs/ so it can be used for tests"
-	$(COPY_CMD) $(BUILD_DIR)/$(JAR_FILE) libs
+	@echo "Copying iniparser.jar over to lib/ so it can be used for tests"
+	$(COPY_CMD) $(BUILD_DIR)/$(JAR_FILE) lib
 
 inspect: $(OUTPUT_DIR)
 	@echo Sources: $(SOURCES)
@@ -106,9 +108,6 @@ inspect: $(OUTPUT_DIR)
 update-classpath:
 	@echo "Manifest-Version: $(MANIFEST_VERSION)\nMain-Class: $(MANIFEST_MAIN_CLASS)\nClass-Path:\nCreated-By: $(MANIFEST_CREATED_BY)" > $(MANIFEST)
 	@echo "MANIFEST.MF Created at $(MANIFEST)"
-
-format: $(SOURCES)
-	java -jar google-java-format-1.15.0-all-deps.jar -i $(SOURCES)
 
 sources:
 	@echo SOURCES: $(SOURCES)
