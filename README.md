@@ -27,7 +27,7 @@ mvn compile
 
 ### How to run tests?
 
-The project uses JUnit 4.8.2 for unit testing.
+The project uses JUnit 4.8.2 for unit testing. The library is vendored in the `lib/` directory.
 
 Java +11
 ```console
