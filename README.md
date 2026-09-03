@@ -8,21 +8,41 @@
 
 ### How to build?
 
-* **Maven:** `$ mvn compile`
-* **Makefile:** `$ make compile` (or just `$ make` which calls `compile` and `jar`)
+Java +11
+```console
+java Build.java
+```
+
+Java <11
+```console
+javac Build.java && java Build
+```
+
+Maven:
+```console
+mvn compile
+```
 
 ---
 
 ### How to run tests?
 
-The project uses JUnit 4 for unit testing.
+The project uses JUnit 4.8.2 for unit testing.
 
-* **With Maven (Recommended):** `$ mvn test` (or `$ mvn verify` for the full lifecycle)
-* **With Makefile (Manual Setup Required):**
-    1.  Install the JUnit dependency: `make install-test-dependencies`
-    2.  Run the tests: `$ make run-tests`
+Java +11
+```console
+java Build test
+```
 
-> **Note for Makefile:** The `run-tests` command requires the `junit-4.8.2.jar` file to be present in the `libs/` directory.
+Java <11
+```console
+javac Build.java && java Build test
+```
+
+Maven:
+```console
+mvn test
+```
 
 ---
 
