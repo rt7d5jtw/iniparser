@@ -1,29 +1,16 @@
 package org.iniparser;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.Files;
 import java.io.IOException;
 
 public class Iniparser {
-
-  public class IniFile {
-    private final Map<String, Map<String, String>> sections;
-
-    public IniFile(Map<String, Map<String, String>> sections) {
-      this.sections = sections;
-    }
-
-    public String getValue(String section, String key) {
-      return sections.getOrDefault(section, Collections.emptyMap()).get(key);
-    }
-  }
-
-  private Optional<String> src = Optional.empty();
+  private String src = null;
   private int cursor = 0;
   private int line   = 0;
   private String currentSection;
@@ -34,22 +21,28 @@ public class Iniparser {
    * @return An Optional containing the fully parsed IniFile object.
    * @throws IOException If the file cannot be read.
    */
-  public Optional<IniFile> parse(String filepath) throws IOException {
-    Path path    = Paths.get(filepath);
-    String fileSrc = Files.readString(path);
+  public IniFile parse(String filepath) throws IOException {
+    Path path           = Paths.get(filepath);
+    byte[] fileContents = Files.readAllBytes(path);
+    String fileSrc      = new String(fileContents);
 
-    this.src    = Optional.of(fileSrc);
+    this.src    = fileSrc;
     this.cursor = 0;
 
-    Map<String, Map<String, String>> iniMap = new HashMap<>();
+    ArrayList<String> sections = new ArrayList<>();
+    ArrayList<String> keys     = new ArrayList<>();
+    ArrayList<String> values   = new ArrayList<>();
+
+    skipWhitespace();
 
     while (!isAtEOF()) {
       switch (peek()) {
-        case '\n' -> {
+        case '\n': {
           this.line++;
           this.cursor++;
+          break;
         }
-        case '[' -> {
+        case '[': {
           this.cursor++;
           StringBuilder sectionBuilder = new StringBuilder();
 
@@ -59,32 +52,91 @@ public class Iniparser {
           }
 
           String section = sectionBuilder.toString();
-          Map<String, String> sectionMap = new HashMap<>();
-          iniMap.put(section, sectionMap);
-
           this.currentSection = section;
 
-          if (!isAtEOF()) this.cursor++; // Move past the ']' character safely
+          if (!isAtEOF()) { this.cursor++; } // Move past the ']' character
+          break;
         }
-        case ';', '#' -> {
+        case ';':
+        case '#': {
           readComment();
-          if (!isAtEOF()) this.cursor++; // Move cursor out of the comment safely
+          if (!isAtEOF()) { this.cursor++; } // Move cursor out of the comment
         }
-        default -> {
+        /* WHITESPACE */
+        case ' ':
+        case '\f':
+        case '\r':
+        case '\t': {
+          skipWhitespace();
+          break;
+        }
+        default: {
           if (Character.isAlphabetic(peek())) {
-            readKVPair(iniMap);
+            readKVPair(sections, keys, values);
           } else {
-            this.cursor++; // Ensure we always advance to avoid infinite loops
+            this.cursor++; // advance to avoid infinite loop
           }
         }
       }
     }
 
+    for (int idx = 0; idx < sections.size(); idx += 1)
+    {
+      String section = sections.get(idx);
+      String key     = keys.get(idx);
+      String value   = values.get(idx);
+      System.out.println("[" + idx + "] SECTION: " + section + " | Key-Value: " + key + " = " + value);
+    }
+    //sections.forEach(System.out::println);
+    //keys.forEach(System.out::println);
+    //values.forEach(System.out::println);
+
     // Reset the state of the parser
     this.reset();
 
-    IniFile result = new IniFile(iniMap);
-    return Optional.of(result);
+    //String[] sectionsArray = sections.toArray(new String[0]);
+    //String[] keysArray     = keys.toArray(new String[0]);
+    //String[] valuesArray   = values.toArray(new String[0]);
+
+    int size = sections.size();
+    ArrayList<Integer> indices = new ArrayList<>(size);
+    for (int idx = 0; idx < size; idx += 1) {
+      indices.add(idx);
+    }
+
+    indices.sort((a, b) -> {
+      int sectionCompare = sections.get(a).compareTo(sections.get(b));
+      if (sectionCompare != 0) {
+        return sectionCompare;
+      }
+
+      return keys.get(a).compareTo(keys.get(b));
+    });
+
+    String[] sectionsArray = new String[size];
+    String[] keysArray     = new String[size];
+    String[] valuesArray   = new String[size];
+
+    for (int idx = 0; idx < size; idx += 1) {
+      int sortedIndex    = indices.get(idx);
+
+      sectionsArray[idx] = sections.get(sortedIndex);
+      keysArray[idx]     = keys.get(sortedIndex);
+      valuesArray[idx]   = values.get(sortedIndex);
+    }
+
+    IniFile result = new IniFile(sectionsArray, keysArray, valuesArray);
+    return result;
+  }
+
+  public void skipWhitespace() {
+    while (!isAtEOF() && peek()  == ' '  ||
+           !isAtEOF() && peek()  == '\f' ||
+           !isAtEOF() && peek()  == '\t' ||
+           !isAtEOF() && peek()  == '\r'
+    ) {
+      this.cursor++;
+    }
   }
 
   public void readComment() {
@@ -93,8 +145,8 @@ public class Iniparser {
     }
   }
 
-  public void readKVPair(Map<String, Map<String, String>> iniMap) {
-    StringBuilder keyBuilder = new StringBuilder();
+  public void readKVPair(ArrayList<String> sections, ArrayList<String> keys, ArrayList<String> values) {
+    StringBuilder keyBuilder   = new StringBuilder();
     StringBuilder valueBuilder = new StringBuilder();
 
     while (!isAtEOF() && peek() != '\n') {
@@ -109,12 +161,13 @@ public class Iniparser {
       // Read the value
       if (!isAtEOF() && peek() == '=') {
         this.cursor++; // Move cursor from `=`
+        skipWhitespace(); // Skip any possible left side whitespace
         while (!isAtEOF() && peek() != '\n') {
           // Skip comments
           if (peek() == ';' || peek() == '#') {
             readComment();
-            break;
-          } else {
+          }
+          else {
             valueBuilder.append(peek());
           }
           this.cursor++;
@@ -125,28 +178,26 @@ public class Iniparser {
       if (!isAtEOF()) { this.cursor++; }
     }
 
-    String key = keyBuilder.toString();
+    String key   = keyBuilder.toString();
     String value = valueBuilder.toString().trim();
 
-    // Safely insert into the map
-    if (this.currentSection != null && iniMap.containsKey(this.currentSection)) {
-      Map<String, String> section = iniMap.get(this.currentSection);
-      section.put(key, value);
-    }
+    sections.add(this.currentSection);
+    keys.add(key);
+    values.add(value);
   }
 
   public char peekAhead() {
-    if (this.cursor + 1 >= this.src.get().length()) { return '\0'; } // Prevents out-of-bounds on last char
-    return this.src.get().charAt(this.cursor + 1);
+    if (this.cursor + 1 >= this.src.length()) { return '\0'; } // Prevents out-of-bounds on last char
+    return this.src.charAt(this.cursor + 1);
   }
 
   public char peek() {
     if (isAtEOF()) { return '\0'; }
-    return this.src.get().charAt(this.cursor);
+    return this.src.charAt(this.cursor);
   }
 
   public boolean isAtEOF() {
-    return !this.src.isPresent() || this.cursor >= this.src.get().length();
+    return this.cursor >= this.src.length();
   }
 
   /**
@@ -155,7 +206,7 @@ public class Iniparser {
   public void reset() {
     this.cursor         = 0;
     this.line           = 1;
-    this.src            = Optional.empty();
+    this.src            = null;
     this.currentSection = null;
   }
 }
