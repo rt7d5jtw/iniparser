@@ -1,8 +1,52 @@
 import javax.tools.ToolProvider;
 import javax.tools.JavaCompiler;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintStream;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.lang.reflect.Method;
 
 public class Build {
+
+  /* A Class to read input stream into an output stream from another process for Java 6 Compatibility */
+  private static class StreamGobbler extends Thread {
+    private final InputStream inputStream;
+    private final PrintStream outputStream;
+
+    StreamGobbler(InputStream inputStream, PrintStream outputStream)
+    {
+      this.inputStream  = inputStream;
+      this.outputStream = outputStream;
+    }
+
+    @Override
+    public void run()
+    {
+      String line;
+      BufferedReader reader = null;
+
+      try {
+        reader = new BufferedReader(new InputStreamReader(inputStream));
+        while ((line = reader.readLine()) != null) {
+          outputStream.println(line); // forward the input stream
+        }
+      } catch (IOException ioexception) {
+        System.err.println("Error forwarding output stream!");
+        ioexception.printStackTrace();
+      } finally {
+        if (reader != null) {
+          try {
+            reader.close();
+          } catch (IOException ioexception) {
+            System.err.println("Error: Could not close the reader");
+          }
+        }
+      }
+    }
+  }
+
   public static final String CLASSPATH_SEPARATOR = File.pathSeparator;
   public static final String LIBS = "lib/*";
   public static final String OUTPUT_DIR = "classes";
@@ -14,21 +58,20 @@ public class Build {
   public static void main(String[] args) throws Exception {
     String command = args.length > 0 ? args[0] : "build";
 
-    switch (command) {
-      case "build": {
-        compile();
-        break;
-      }
-      case "test": {
-        compile();
-        runTests();
-        break;
-      }
-      default: {
-        println("Unknown command: " + command);
-        println("Usage: java Build[.java] [build|test]");
-        System.exit(1);
-      }
+    if (command.equals("build"))
+    {
+      compile();
+    }
+    else if (command.equals("test"))
+    {
+      compile();
+      runTests();
+    }
+    else
+    {
+      println("Unknown command: " + command);
+      println("Usage: java Build[.java] [build|test]");
+      System.exit(1);
     }
   }
 
@@ -93,8 +136,27 @@ public class Build {
         "org.iniparser.AppTest"
     );
 
-    processBuilder.inheritIO();
+    boolean inheritedIO = false;
+    try {
+      // Let's see if we have inheritIO method available (requires Java 7+)
+      Method inheritIO = ProcessBuilder.class.getMethod("inheritIO");
+      inheritIO.invoke(processBuilder);
+      inheritedIO = true;
+    } catch (NoSuchMethodException noSuchMethodException) {
+      //System.out.println("ProcessBuilder.inheritIO method not available (requires Java +7)");
+    } catch (Exception exception) {
+      System.err.println("Error configuring ProcessBuilder IO");
+      exception.printStackTrace();
+    }
+
     Process process = processBuilder.start();
+    if (inheritedIO == false) {
+      StreamGobbler errorGobbler  = new StreamGobbler(process.getErrorStream(), System.err);
+      StreamGobbler outputGobbler = new StreamGobbler(process.getInputStream(), System.out);
+
+      errorGobbler.start();
+      outputGobbler.start();
+    }
 
     int exitcode = process.waitFor();
     if (exitcode != 0) {
