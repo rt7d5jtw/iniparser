@@ -1,13 +1,10 @@
 package org.iniparser;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.util.Arrays;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.Files;
 import java.io.IOException;
 
 public class Iniparser {
@@ -23,16 +20,14 @@ public class Iniparser {
    * @throws IOException If the file cannot be read.
    */
   public IniFile parse(String filepath) throws IOException {
-    Path path           = Paths.get(filepath);
-    byte[] fileContents = Files.readAllBytes(path);
-    String fileSrc      = new String(fileContents);
+    String fileSrc = readTextFile(filepath);
 
     this.src    = fileSrc;
     this.cursor = 0;
 
-    ArrayList<String> sections = new ArrayList<>();
-    ArrayList<String> keys     = new ArrayList<>();
-    ArrayList<String> values   = new ArrayList<>();
+    ArrayList<String> sections = new ArrayList<String>();
+    ArrayList<String> keys     = new ArrayList<String>();
+    ArrayList<String> values   = new ArrayList<String>();
 
     skipWhitespace();
 
@@ -60,7 +55,7 @@ public class Iniparser {
         }
         case ';':
         case '#': {
-          readComment();
+          skipComment();
           if (!isAtEOF()) { this.cursor++; } // Move cursor out of the comment
         }
         /* WHITESPACE */
@@ -72,7 +67,7 @@ public class Iniparser {
           break;
         }
         default: {
-          if (Character.isAlphabetic(peek())) {
+          if (Character.isLetter(peek())) {
             readKVPair(sections, keys, values);
           } else {
             this.cursor++; // advance to avoid infinite loop
@@ -129,6 +124,38 @@ public class Iniparser {
     return result;
   }
 
+  public String readTextFile(String filepath) throws IOException {
+    File file = new File(filepath);
+    StringBuilder stringBuilder = new StringBuilder();
+    String fileSource     = null;
+    FileReader fileReader = null;
+    BufferedReader reader = null;
+    String lineSeparator  = System.getProperty("line.separator");
+    String line;
+
+    try {
+      fileReader = new FileReader(file);
+      reader     = new BufferedReader(fileReader);
+
+      while ((line = reader.readLine()) != null) {
+        stringBuilder.append(line).append(lineSeparator);
+      }
+
+      fileSource = stringBuilder.toString();
+
+    } finally {
+      if (reader != null) {
+        try {
+          reader.close();
+        } catch (IOException ioexception) {
+          System.err.println("Failed to close the BufferedReader!");
+        }
+      }
+    }
+
+    return fileSource;
+  }
+
   public void skipWhitespace() {
     while (!isAtEOF() && peek()  == ' '  ||
            !isAtEOF() && peek()  == '\f' ||
@@ -139,7 +166,7 @@ public class Iniparser {
     }
   }
 
-  public void readComment() {
+  public void skipComment() {
     while (!isAtEOF() && peekAhead() != '\n' && peekAhead() != '\0') {
       this.cursor++;
     }
@@ -165,7 +192,7 @@ public class Iniparser {
         while (!isAtEOF() && peek() != '\n') {
           // Skip comments
           if (peek() == ';' || peek() == '#') {
-            readComment();
+            skipComment();
           }
           else {
             valueBuilder.append(peek());
