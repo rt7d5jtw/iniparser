@@ -1,8 +1,8 @@
-# INI File Parser (Java 17)
+# INI File Parser
 
 ### Requirements
 
-* Java 17
+* Java 6+ (Tested on Zulu OpenJDK 1.6.0-119)
 
 ---
 
