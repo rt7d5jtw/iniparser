@@ -31,8 +31,8 @@ public class AppTest {
         try {
             iniFile = iniparser.parse(filepath);
         } catch (IOException ex) {
-            System.err.println("File parsing failed due to IO Exception:");
-            ex.printStackTrace();
+            System.err.println("File parsing failed due to IO Exception!");
+            //ex.printStackTrace();
             fail("File parsing failed due to IOException: " + ex.getMessage());
             return;
         }

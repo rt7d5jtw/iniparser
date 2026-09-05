@@ -1,5 +1,6 @@
 package org.iniparser;
 
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -80,50 +81,49 @@ public class Iniparser {
       }
     }
 
+    int sectionSize = sections.size();
+    int[] indexes = new int[sectionSize];
+    for (int idx = 0; idx < sectionSize; idx += 1) {
+      indexes[idx] = idx;
+    }
+
+    bubbleSort(sections, keys, values, indexes);
+    // DEBUG PRINT
     for (int idx = 0; idx < sections.size(); idx += 1)
     {
       String section = sections.get(idx);
       String key     = keys.get(idx);
       String value   = values.get(idx);
-      System.out.println("[" + idx + "] SECTION: " + section + " | Key-Value: " + key + " = " + value);
+      System.out.println("[SECTION: " + section + "] " + "[" + idx + "] Key: " + key + " = " + value);
     }
-    //sections.forEach(System.out::println);
-    //keys.forEach(System.out::println);
-    //values.forEach(System.out::println);
+    System.out.println("Indexes: " + Arrays.toString(indexes));
+
+    // Fill the fixed-length arrays
+    String[] sectionsArray = new String[sectionSize];
+    String[] keysArray     = new String[sectionSize];
+    String[] valuesArray   = new String[sectionSize];
+
+    for (int idx = 0; idx < sectionSize; idx += 1) {
+      String section = sections.get(idx);
+      String key     = keys.get(idx);
+      String value   = values.get(idx);
+
+      sectionsArray[idx] = section;
+      keysArray[idx]     = key;
+      valuesArray[idx]   = value;
+    }
+
+    // DEBUG PRINT
+    for (int idx = 0; idx < sectionSize; idx += 1)
+    {
+      String section = sectionsArray[idx];
+      String key     = keysArray[idx];
+      String value   = valuesArray[idx];
+      System.out.println("meowmeow [SECTION: " + section + "] " + "[" + idx + "] Key: " + key + " = " + value);
+    }
 
     // Reset the state of the parser
     this.reset();
-
-    //String[] sectionsArray = sections.toArray(new String[0]);
-    //String[] keysArray     = keys.toArray(new String[0]);
-    //String[] valuesArray   = values.toArray(new String[0]);
-
-    int size = sections.size();
-    ArrayList<Integer> indices = new ArrayList<>(size);
-    for (int idx = 0; idx < size; idx += 1) {
-      indices.add(idx);
-    }
-
-    indices.sort((a, b) -> {
-      int sectionCompare = sections.get(a).compareTo(sections.get(b));
-      if (sectionCompare != 0) {
-        return sectionCompare;
-      }
-
-      return keys.get(a).compareTo(keys.get(b));
-    });
-
-    String[] sectionsArray = new String[size];
-    String[] keysArray     = new String[size];
-    String[] valuesArray   = new String[size];
-
-    for (int idx = 0; idx < size; idx += 1) {
-      int sortedIndex    = indices.get(idx);
-
-      sectionsArray[idx] = sections.get(sortedIndex);
-      keysArray[idx]     = keys.get(sortedIndex);
-      valuesArray[idx]   = values.get(sortedIndex);
-    }
 
     IniFile result = new IniFile(sectionsArray, keysArray, valuesArray);
     return result;
@@ -208,5 +208,76 @@ public class Iniparser {
     this.line           = 1;
     this.src            = null;
     this.currentSection = null;
+  }
+
+  public void bubbleSort(
+      ArrayList<String> sectionsArray,
+      ArrayList<String> keysArray,
+      ArrayList<String> valuesArray,
+      int[] indices
+  ) {
+    for (int idx = 0; idx < sectionsArray.size() - 1; idx += 1) {
+      boolean swapped = false;
+
+      for (int j = 0; j < sectionsArray.size() - (idx + 1); j += 1) {
+        String str1 = sectionsArray.get(j);
+        String str2 = sectionsArray.get(j + 1);
+        int sectionCompareResult = str2.compareToIgnoreCase(str1);
+
+        if (sectionCompareResult < 0) {
+          sectionsArray.set(j + 1, str1);
+          sectionsArray.set(j, str2);
+          swapped = true;
+
+          // Synchronize keys and values with the index changes
+          String key1 = keysArray.get(j);
+          String key2 = keysArray.get(j + 1);
+          keysArray.set(j, key2);
+          keysArray.set(j + 1, key1);
+
+          String value1 = valuesArray.get(j);
+          String value2 = valuesArray.get(j + 1);
+          valuesArray.set(j, value2);
+          valuesArray.set(j + 1, value1);
+
+          // Record the change in array indexes.
+          // We need to swap the indexes, but we must preserve the original values.
+          int indexpos1 = indices[j];
+          int indexpos2 = indices[j + 1];
+          indices[j]    = indexpos2;
+          indices[j+1]  = indexpos1;
+        }
+        else if (sectionCompareResult == 0) {
+          // Sections are the same, lets compare the keys to see if we can sort them
+          String key1 = keysArray.get(j);
+          String key2 = keysArray.get(j + 1);
+          int keyCompareResult = key2.compareToIgnoreCase(key1);
+          if (keyCompareResult < 0) {
+            keysArray.set(j, key2);
+            keysArray.set(j + 1, key1);
+            // We have to also change the indexes of the sections and values to keep the indexes stable.
+            // Sync the values
+            String value1 = valuesArray.get(j);
+            String value2 = valuesArray.get(j + 1);
+            valuesArray.set(j, value2);
+            valuesArray.set(j + 1, value1);
+            // Sections
+            sectionsArray.set(j + 1, str1);
+            sectionsArray.set(j, str2);
+
+            swapped = true;
+
+            int keyidxpos1 = indices[j];
+            int keyidxpos2 = indices[j + 1];
+            indices[j]     = keyidxpos2;
+            indices[j + 1] = keyidxpos1;
+          }
+        }
+      }
+
+      if (swapped == false) {
+        break;
+      }
+    }
   }
 }
