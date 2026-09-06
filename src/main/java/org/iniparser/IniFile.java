@@ -11,6 +11,17 @@ public class IniFile {
     this.values   = values;
   }
 
+  // DEBUG PRINT
+  public void printAll() {
+    for (int idx = 0; idx < sections.length; idx += 1)
+    {
+      String section = this.sections[idx];
+      String key     = this.keys[idx];
+      String value   = this.values[idx];
+      System.out.println("[SECTION: " + section + "] " + "[" + idx + "] Key: " + key + " = " + value);
+    }
+  }
+
   public String getValue(String section, String key) {
     int index = binarySearch(section, key);
     if (index == -1) {

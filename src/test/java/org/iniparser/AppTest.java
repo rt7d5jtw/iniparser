@@ -25,10 +25,11 @@ public class AppTest {
         // Define the test file path
         String filepath = "test-files/test.ini";
         System.out.println("File to parse: " + filepath);
-        IniFile iniFile = null;
+        IniFile inifile = null;
 
         try {
-            iniFile = iniparser.parse(filepath);
+            inifile = iniparser.parse(filepath);
+            inifile.printAll();
         } catch (IOException ex) {
             System.err.println("File parsing failed due to IO Exception!");
             //ex.printStackTrace();
@@ -47,7 +48,6 @@ public class AppTest {
         // ---------------------------------
 
         //assertTrue("Optional should contain an IniFile object.", iniFile.isPresent());
-        IniFile config = iniFile;
 
         //String result = config.getValue("author", "name");
         //assertNotNull("Value should be retrieved successfully.", result);

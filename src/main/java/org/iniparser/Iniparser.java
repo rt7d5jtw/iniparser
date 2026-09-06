@@ -82,16 +82,9 @@ public class Iniparser {
       indexes[idx] = idx;
     }
 
+    // Sort the arrays
+    // TODO: substitute with quick sort
     bubbleSort(sections, keys, values, indexes);
-    // DEBUG PRINT
-    //for (int idx = 0; idx < sections.size(); idx += 1)
-    //{
-    //  String section = sections.get(idx);
-    //  String key     = keys.get(idx);
-    //  String value   = values.get(idx);
-    //  System.out.println("[SECTION: " + section + "] " + "[" + idx + "] Key: " + key + " = " + value);
-    //}
-    //System.out.println("Indexes: " + Arrays.toString(indexes));
 
     // Fill the fixed-length arrays
     String[] sectionsArray = new String[sectionSize];
@@ -110,16 +103,7 @@ public class Iniparser {
       valuesArray[idx]   = value;
     }
 
-    // DEBUG PRINT
-    //for (int idx = 0; idx < sectionSize; idx += 1)
-    //{
-    //  String section = sectionsArray[idx];
-    //  String key     = keysArray[idx];
-    //  String value   = valuesArray[idx];
-    //  System.out.println("meowmeow [SECTION: " + section + "] " + "[" + idx + "] Key: " + key + " = " + value);
-    //}
-
-    // Reset the state of the parser
+   // Reset the state of the parser
     this.reset();
 
     IniFile result = new IniFile(sectionsArray, keysArray, valuesArray);
