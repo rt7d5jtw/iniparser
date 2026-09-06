@@ -1,5 +1,3 @@
-import javax.tools.ToolProvider;
-import javax.tools.JavaCompiler;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -7,11 +5,15 @@ import java.io.PrintStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.lang.reflect.Method;
+import javax.tools.ToolProvider;
+import javax.tools.JavaCompiler;
 
-public class Build {
+public class Build
+{
 
   /* A Class to read input stream into an output stream from another process for Java 6 Compatibility */
-  private static class StreamGobbler extends Thread {
+  private static class StreamGobbler extends Thread
+  {
     private final InputStream inputStream;
     private final PrintStream outputStream;
 
@@ -55,7 +57,8 @@ public class Build {
     "src/main/java/org/iniparser/IniFile.java"
   };
 
-  public static void main(String[] args) throws Exception {
+  public static void main(String[] args) throws Exception
+  {
     String command = args.length > 0 ? args[0] : "build";
 
     if (command.equals("build"))
@@ -75,11 +78,13 @@ public class Build {
     }
   }
 
-  public static void compile() {
+  public static void compile()
+  {
     new File("classes").mkdirs();
 
     JavaCompiler javaCompiler = ToolProvider.getSystemJavaCompiler();
-    if (javaCompiler == null) {
+    if (javaCompiler == null)
+    {
       System.err.println("Error: Java Compiler not found!");
       System.exit(1);
     }
@@ -94,16 +99,19 @@ public class Build {
         SOURCE_FILES[1]
     );
 
-    if (exitcode == 0) {
+    if (exitcode == 0)
+    {
       println("Compilation successful");
     }
-    else {
+    else
+    {
       System.err.println("Compilation error with exit code: " + exitcode);
       System.exit(1);
     }
   }
 
-  public static void runTests() throws Exception {
+  public static void runTests() throws Exception
+  {
     JavaCompiler javaCompiler = ToolProvider.getSystemJavaCompiler();
     if (javaCompiler == null) {
       System.err.println("Error: Java Compiler not found!");
@@ -122,14 +130,15 @@ public class Build {
 
     println("Compiling tests...");
 
-    if (compilecode != 0) {
+    if (compilecode != 0)
+    {
       System.err.println("Test compilation error");
       System.exit(1);
     }
 
     println("Running tests...");
 
-    ProcessBuilder processBuilder = new ProcessBuilder(
+    ProcessBuilder processBuilder = new ProcessBuilder (
         "java",
         "-cp", classpath,
         "org.junit.runner.JUnitCore",
@@ -150,7 +159,8 @@ public class Build {
     }
 
     Process process = processBuilder.start();
-    if (inheritedIO == false) {
+    if (inheritedIO == false)
+    {
       StreamGobbler errorGobbler  = new StreamGobbler(process.getErrorStream(), System.err);
       StreamGobbler outputGobbler = new StreamGobbler(process.getInputStream(), System.out);
 
@@ -159,22 +169,28 @@ public class Build {
     }
 
     int exitcode = process.waitFor();
-    if (exitcode != 0) {
+    if (exitcode != 0)
+    {
       System.err.println("Tests failed!");
       System.exit(exitcode);
     }
-    else {
+    else
+    {
       println("All tests passed!");
     }
   };
 
-  private static String getTestClasspath() {
+  private static String getTestClasspath()
+  {
     StringBuilder classpath = new StringBuilder(OUTPUT_DIR);
     File libDir = new File("lib");
 
-    if (libDir.exists() && libDir.isDirectory()) {
-      for (File file : libDir.listFiles()) {
-        if (file.getName().endsWith(".jar")) {
+    if (libDir.exists() && libDir.isDirectory())
+    {
+      for (File file : libDir.listFiles())
+      {
+        if (file.getName().endsWith(".jar"))
+        {
           classpath
             .append(CLASSPATH_SEPARATOR)
             .append(file.getPath());
@@ -185,7 +201,8 @@ public class Build {
     return classpath.toString();
   }
 
-  public static void println(String str) {
+  public static void println(String str)
+  {
     System.out.println(str);
   }
 }
