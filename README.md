@@ -7,7 +7,7 @@
   - Tested on Zulu OpenJDK 1.6.0-119
   - Tested on modern JDKs (Java 11+)
 
-![Java 5 Compatibility Build Output](terminal.png)
+![Java 5 Compatibility Build Output](resources/terminal.png)
 
 ---
 
