@@ -5,13 +5,15 @@ import java.io.PrintStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.lang.reflect.Method;
-import javax.tools.ToolProvider;
-import javax.tools.JavaCompiler;
+import java.lang.ProcessBuilder;
+import java.util.List;
+import java.util.ArrayList;
 
 public class Build
 {
 
   /* A Class to read input stream into an output stream from another process for Java 6 Compatibility */
+  // StreamGobbler {{{
   private static class StreamGobbler extends Thread
   {
     private final InputStream inputStream;
@@ -48,7 +50,9 @@ public class Build
       }
     }
   }
+  // }}}
 
+  // Constants {{{
   public static final String CLASSPATH_SEPARATOR = File.pathSeparator;
   public static final String LIBS = "lib/*";
   public static final String OUTPUT_DIR = "classes";
@@ -56,6 +60,7 @@ public class Build
     "src/main/java/org/iniparser/Iniparser.java",
     "src/main/java/org/iniparser/IniFile.java"
   };
+  // }}}
 
   public static void main(String[] args) throws Exception
   {
@@ -78,67 +83,151 @@ public class Build
     }
   }
 
-  public static void compile()
-  {
-    new File("classes").mkdirs();
-
-    JavaCompiler javaCompiler = ToolProvider.getSystemJavaCompiler();
-    if (javaCompiler == null)
+  public static void compile() throws Exception
     {
-      System.err.println("Error: Java Compiler not found!");
-      System.exit(1);
+      new File("classes").mkdirs();
+
+      String[] compilerCommands = new String[2 + SOURCE_FILES.length];
+      compilerCommands[0] = "-d";
+      compilerCommands[1] = OUTPUT_DIR;
+
+      int sourcePosition = 0;
+      int destinationPosition = 2;
+      System.arraycopy(SOURCE_FILES, sourcePosition, compilerCommands, destinationPosition, SOURCE_FILES.length);
+
+      boolean compiledSuccessful = tryCompileWithJavaCompilerApi(compilerCommands);
+  
+      // Fallback for Java 5 using external ProcessBuilder
+      if (compiledSuccessful == false)
+      {
+        // ProcessBuilder requires the actual executable name as the first argument
+        List<String> processCommand = new ArrayList<String>();
+        processCommand.add("javac");
+        for (int idx = 0; idx < compilerCommands.length; idx += 1)
+        {
+          processCommand.add(compilerCommands[idx]);
+        }
+  
+        ProcessBuilder processBuilder = new ProcessBuilder(processCommand);
+        processBuilder.redirectErrorStream(true);
+        Process process = processBuilder.start();
+  
+        StreamGobbler streamGobbler = new StreamGobbler(process.getInputStream(), System.out);
+        streamGobbler.start();
+  
+        int exitCode = process.waitFor();
+        streamGobbler.join();
+  
+        if (exitCode == 0)
+        {
+          printCompilationInfo();
+        }
+        else 
+        {
+          System.err.println("Compilation error with exit code: " + exitCode);
+          System.exit(1);
+        }
+      }
+      else 
+      {
+        printCompilationInfo();
+      }
     }
 
-    println("Compiling sources...");
-    int exitcode = javaCompiler.run(
+  public static boolean tryCompileWithJavaCompilerApi(String[] compilerCommands)
+  {
+    try {
+      Class toolProvider = Class.forName("javax.tools.ToolProvider");
+      
+      // Fetch and invoke the static getSystemJavaCompiler method
+      Method getCompilerMethod = toolProvider.getMethod("getSystemJavaCompiler", new Class[0]);
+      Object javaCompiler = getCompilerMethod.invoke(null, new Object[0]);
+
+      if (javaCompiler == null)
+      {
+        return false;
+      }
+
+      // Locate the run() method with the exact parameter types it expects
+      Method runMethod = javaCompiler.getClass().getMethod(
+          "run",
+          new Class[] {
+            java.io.InputStream.class,
+            java.io.OutputStream.class,
+            java.io.OutputStream.class,
+            String[].class
+          }
+      );
+
+      // Package arguments for the run() method
+      Object[] invokeArgs = new Object[] {
         null,
         System.out,
         System.err,
-        "-d", "classes",
-        SOURCE_FILES[0],
-        SOURCE_FILES[1]
-    );
+        compilerCommands
+      };
 
-    if (exitcode == 0)
-    {
-      println("Compilation successful");
-    }
-    else
-    {
-      System.err.println("Compilation error with exit code: " + exitcode);
-      System.exit(1);
-    }
-  }
+      // Execute the compiler and check for a successful exit code (0)
+      Integer exitCode = (Integer) runMethod.invoke(javaCompiler, invokeArgs);
+      return exitCode.intValue() == 0;
 
+    } catch (ClassNotFoundException classNotFoundException) {
+      System.err.println("[Warning] Missing javax.tools (Java 5 or earlier java version)");
+      return false;
+    } catch (Exception exception) {
+      System.err.println("Unknown Error during java 6 compatible compilation");
+      //exception.printStackTrace();
+      return false;
+    }
+  } 
+
+  // tests {{{
   public static void runTests() throws Exception
   {
-    JavaCompiler javaCompiler = ToolProvider.getSystemJavaCompiler();
-    if (javaCompiler == null) {
-      System.err.println("Error: Java Compiler not found!");
-      System.exit(1);
-    }
-
     String classpath = getTestClasspath();
-    int compilecode = javaCompiler.run(
-        null,
-        System.out,
-        System.err,
-        "-cp", classpath,
-        "-d", OUTPUT_DIR,
-        "src/test/java/org/iniparser/AppTest.java"
-    );
+    String[] compilerCommands = new String[] {
+      "-cp", classpath,
+      "-d", OUTPUT_DIR,
+      "src/test/java/org/iniparser/AppTest.java"
+    };
 
-    println("Compiling tests...");
-
-    if (compilecode != 0)
+    boolean testCompiled = tryCompileWithJavaCompilerApi(compilerCommands);
+    if (testCompiled == false)
     {
-      System.err.println("Test compilation error");
-      System.exit(1);
+      List<String> processCommands = new ArrayList<String>();
+      processCommands.add("javac");
+      processCommands.add("-cp");
+      processCommands.add(classpath);
+      processCommands.add("-d");
+      processCommands.add(OUTPUT_DIR);
+      processCommands.add("src/test/java/org/iniparser/AppTest.java");
+
+      ProcessBuilder processBuilder = new ProcessBuilder(processCommands);
+      processBuilder.redirectErrorStream(true);
+      Process process = processBuilder.start();
+
+      StreamGobbler streamGobbler = new StreamGobbler(process.getInputStream(), System.out);
+      streamGobbler.start();
+  
+      int exitCode = process.waitFor();
+      streamGobbler.join();
+
+      if (exitCode != 0)
+      {
+        System.err.println("Test compilation error");
+        System.exit(1);
+      }
+      else if (exitCode == 0)
+      {
+        println("Test files successfully compiled");
+      }
+    }
+    else if (testCompiled == true)
+    {
+      println("Test files successfully compiled");
     }
 
-    println("Running tests...");
-
-    ProcessBuilder processBuilder = new ProcessBuilder (
+    ProcessBuilder processBuilder = new ProcessBuilder(
         "java",
         "-cp", classpath,
         "org.junit.runner.JUnitCore",
@@ -180,7 +269,7 @@ public class Build
     }
   };
 
-  private static String getTestClasspath()
+  public static String getTestClasspath()
   {
     StringBuilder classpath = new StringBuilder(OUTPUT_DIR);
     File libDir = new File("lib");
@@ -200,9 +289,34 @@ public class Build
 
     return classpath.toString();
   }
+  // }}}
 
   public static void println(String str)
   {
     System.out.println(str);
+  }
+
+  // verbose compilation info
+  public static void printCompilationInfo()
+  {
+    String javaVersion   = System.getProperty("java.version");
+    String javaSpec      = System.getProperty("java.specification.version");
+    String javaVMname    = System.getProperty("java.vm.name");
+    String javaVMVersion = System.getProperty("java.vm.version");
+
+    StringBuilder stringBuilderJavaInfo = new StringBuilder();
+    stringBuilderJavaInfo.append("[COMPILATION] Compilation successful with\n");
+    stringBuilderJavaInfo.append("Java version: ");
+    stringBuilderJavaInfo.append(javaVersion);
+    stringBuilderJavaInfo.append("\nJava specification: ");
+    stringBuilderJavaInfo.append(javaSpec);
+    stringBuilderJavaInfo.append("\nJava VM name: ");
+    stringBuilderJavaInfo.append(javaVMname);
+    stringBuilderJavaInfo.append("\nJava VM Version: ");
+    stringBuilderJavaInfo.append(javaVMVersion);
+    stringBuilderJavaInfo.append("\n");
+
+    String compilationInfo = stringBuilderJavaInfo.toString();
+    println(compilationInfo);
   }
 }
