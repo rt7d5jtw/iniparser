@@ -96,7 +96,7 @@ public class Build
       System.arraycopy(SOURCE_FILES, sourcePosition, compilerCommands, destinationPosition, SOURCE_FILES.length);
 
       boolean compiledSuccessful = tryCompileWithJavaCompilerApi(compilerCommands);
-  
+
       // Fallback for Java 5 using external ProcessBuilder
       if (compiledSuccessful == false)
       {
@@ -107,28 +107,28 @@ public class Build
         {
           processCommand.add(compilerCommands[idx]);
         }
-  
+
         ProcessBuilder processBuilder = new ProcessBuilder(processCommand);
         processBuilder.redirectErrorStream(true);
         Process process = processBuilder.start();
-  
+
         StreamGobbler streamGobbler = new StreamGobbler(process.getInputStream(), System.out);
         streamGobbler.start();
-  
+
         int exitCode = process.waitFor();
         streamGobbler.join();
-  
+
         if (exitCode == 0)
         {
           printCompilationInfo();
         }
-        else 
+        else
         {
           System.err.println("Compilation error with exit code: " + exitCode);
           System.exit(1);
         }
       }
-      else 
+      else
       {
         printCompilationInfo();
       }
@@ -138,7 +138,7 @@ public class Build
   {
     try {
       Class toolProvider = Class.forName("javax.tools.ToolProvider");
-      
+
       // Fetch and invoke the static getSystemJavaCompiler method
       Method getCompilerMethod = toolProvider.getMethod("getSystemJavaCompiler", new Class[0]);
       Object javaCompiler = getCompilerMethod.invoke(null, new Object[0]);
@@ -148,8 +148,11 @@ public class Build
         return false;
       }
 
-      // Locate the run() method with the exact parameter types it expects
-      Method runMethod = javaCompiler.getClass().getMethod(
+      // Fetch the public interface instead of the internal implementation class
+      Class toolInterface = Class.forName("javax.tools.Tool");
+
+      // Locate the run() method on the interface
+      Method runMethod = toolInterface.getMethod(
           "run",
           new Class[] {
             java.io.InputStream.class,
@@ -175,11 +178,12 @@ public class Build
       System.err.println("[Warning] Missing javax.tools (Java 5 or earlier java version)");
       return false;
     } catch (Exception exception) {
-      System.err.println("Unknown Error during java 6 compatible compilation");
-      //exception.printStackTrace();
+      String exceptionMessage = exception.getMessage();
+      System.err.println("Unknown Error during java 6 compatible compilation: " + exceptionMessage);
+      exception.printStackTrace();
       return false;
     }
-  } 
+  }
 
   // tests {{{
   public static void runTests() throws Exception
@@ -208,7 +212,7 @@ public class Build
 
       StreamGobbler streamGobbler = new StreamGobbler(process.getInputStream(), System.out);
       streamGobbler.start();
-  
+
       int exitCode = process.waitFor();
       streamGobbler.join();
 
