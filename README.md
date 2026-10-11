@@ -5,9 +5,8 @@
 - Java 5+
   - Tested on Sun/Oracle JDK 1.5 (Version: 1.5.0_10, Specification: 1.5, VM: Java HotSpot(TM) 64-Bit Server VM 1.5.0_10-b03)
   - Tested on Zulu OpenJDK 1.6.0-119
-  - Tested on modern JDKs (Java 11+)
-
-![Java 5 Compatibility Build Output](resources/terminal.png)
+  - Tested on OpenJDK 11 (Version: 11.0.32.1, Specification: 11, VM: OpenJDK 64-Bit Server VM 11.0.32.1+10-LTS)
+  - Tested on OpenJDK 17 (Version: 17.0.17, Specification: 17, VM: OpenJDK 64-Bit Server VM 17.0.17+10-Debian-1deb12u1)
 
 ---
 
