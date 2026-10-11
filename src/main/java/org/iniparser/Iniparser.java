@@ -302,46 +302,4 @@ public class Iniparser {
     quicksort(startIndex, boundaryIndex - 1, sectionArray, keyArray, indexes);
     quicksort(boundaryIndex + 1, endIndex, sectionArray, keyArray, indexes);
   }
-
-  public void bubbleSort(
-      ArrayList<String> sectionsArray,
-      ArrayList<String> keysArray,
-      int[] indexes
-  ) {
-    for (int idx = 0; idx < indexes.length - 1; idx += 1) {
-      boolean swapped = false;
-
-      for (int j = 0; j < indexes.length - (idx + 1); j += 1) {
-        int indexpos1 = indexes[j];
-        int indexpos2 = indexes[j + 1];
-
-        String str1 = sectionsArray.get(indexpos1);
-        String str2 = sectionsArray.get(indexpos2);
-        int sectionCompareResult = str2.compareToIgnoreCase(str1);
-
-        if (sectionCompareResult < 0) {
-          // Record the change in array indexes.
-          // We need to swap the indexes, but we must preserve the original values.
-          indexes[j]    = indexpos2;
-          indexes[j+1]  = indexpos1;
-          swapped = true;
-        }
-        else if (sectionCompareResult == 0) {
-          // Sections are the same, lets compare the keys to see if we can sort them
-          String key1 = keysArray.get(indexpos1);
-          String key2 = keysArray.get(indexpos2);
-          int keyCompareResult = key2.compareToIgnoreCase(key1);
-          if (keyCompareResult < 0) {
-            indexes[j]     = indexpos2;
-            indexes[j + 1] = indexpos1;
-            swapped = true;
-          }
-        }
-      }
-
-      if (swapped == false) {
-        break;
-      }
-    }
-  }
 }
