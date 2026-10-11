@@ -83,8 +83,9 @@ public class Iniparser {
     }
 
     // Sort the arrays
-    // TODO: substitute with quick sort
-    bubbleSort(sections, keys, values, indexes);
+    int startIndex = 0;
+    int endIndex   = sections.size() - 1;
+    quicksort(startIndex, endIndex, sections, keys, indexes);
 
     // Fill the fixed-length arrays
     String[] sectionsArray = new String[sectionSize];
@@ -223,10 +224,88 @@ public class Iniparser {
     this.currentSection = null;
   }
 
+  public int medianOfThree(ArrayList<String> array, int[] indexes, int index1, int index2, int index3)
+  {
+    String value1 = array.get(indexes[index1]);
+    String value2 = array.get(indexes[index2]);
+    String value3 = array.get(indexes[index3]);
+
+    if (value1.compareTo(value2) >= 0 && value1.compareTo(value3) <= 0 ||
+        value1.compareTo(value2) <= 0 && value1.compareTo(value3) >= 0)
+    {
+      return index1;
+    }
+    if (value2.compareTo(value1) >= 0 && value2.compareTo(value3) <= 0 ||
+        value2.compareTo(value1) <= 0 && value2.compareTo(value3) >= 0)
+    {
+      return index2;
+    }
+
+    return index3;
+  }
+
+  public void quicksort(
+      int startIndex,
+      int endIndex,
+      ArrayList<String> sectionArray,
+      ArrayList<String> keyArray,
+      int[] indexes
+      )
+  {
+    if (startIndex >= endIndex)
+    {
+      return;
+    }
+
+    int midpoint = ((startIndex + endIndex) / 2);
+    int pivotIndex = medianOfThree(sectionArray, indexes, startIndex, midpoint, endIndex);
+    String pivotValue = sectionArray.get(indexes[pivotIndex]);
+
+    int temporaryIndex = indexes[endIndex];
+    indexes[endIndex] = indexes[pivotIndex];
+    indexes[pivotIndex] = temporaryIndex;
+
+    // prefetch pivot strings
+    String pivotSection = sectionArray.get(indexes[endIndex]);
+    String pivotKey     = keyArray.get(indexes[endIndex]);
+
+    int boundaryIndex = startIndex;
+    for (int scannerIndex = startIndex; scannerIndex < endIndex; scannerIndex += 1)
+    {
+      String currentSection = sectionArray.get(indexes[scannerIndex]);
+      int sectionComparison = currentSection.compareTo(pivotSection);
+
+      int keyComparison      = 0;
+      boolean keyPrecesPivot = false;
+
+      // Same section, calculate key comparison
+      if (sectionComparison == 0)
+      {
+        String currentKey = keyArray.get(indexes[scannerIndex]);
+        keyComparison     = currentKey.compareTo(pivotKey);
+        keyPrecesPivot    = (keyComparison < 0);
+      }
+
+      if (sectionComparison < 0 || keyPrecesPivot)
+      {
+        int boundary = indexes[boundaryIndex];
+        indexes[boundaryIndex] = indexes[scannerIndex];
+        indexes[scannerIndex]  = boundary;
+        boundaryIndex += 1;
+      }
+    }
+
+    int tmpPivotIndex = indexes[endIndex];
+    indexes[endIndex] = indexes[boundaryIndex];
+    indexes[boundaryIndex] = tmpPivotIndex;
+
+    quicksort(startIndex, boundaryIndex - 1, sectionArray, keyArray, indexes);
+    quicksort(boundaryIndex + 1, endIndex, sectionArray, keyArray, indexes);
+  }
+
   public void bubbleSort(
       ArrayList<String> sectionsArray,
       ArrayList<String> keysArray,
-      ArrayList<String> valuesArray,
       int[] indexes
   ) {
     for (int idx = 0; idx < indexes.length - 1; idx += 1) {
