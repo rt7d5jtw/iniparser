@@ -177,6 +177,12 @@ public class Iniparser {
         this.cursor++; // Move cursor from `=`
         skipWhitespace(); // Skip any possible left side whitespace
         while (!isAtEOF() && peek() != '\n') {
+          // backlash means multi-line strings
+          if (peek() == '\\')
+          {
+            this.cursor += 2; // lets move from '\' and newline
+            skipWhitespace(); // lets skip whitespace until we find a character
+          }
           // Skip comments
           if (peek() == ';' || peek() == '#') {
             skipComment();
