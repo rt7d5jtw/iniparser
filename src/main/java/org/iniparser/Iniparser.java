@@ -11,7 +11,7 @@ public class Iniparser {
   private String src = null;
   private int cursor = 0;
   private int line   = 0;
-  private String currentSection;
+  private String currentSection = "global";
 
   /**
    * Parses the INI file contents read from the given filepath.
@@ -221,7 +221,7 @@ public class Iniparser {
     this.cursor         = 0;
     this.line           = 1;
     this.src            = null;
-    this.currentSection = null;
+    this.currentSection = "global";
   }
 
   public int medianOfThree(ArrayList<String> array, int[] indexes, int index1, int index2, int index3)
