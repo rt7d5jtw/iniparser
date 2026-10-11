@@ -54,10 +54,17 @@ mvn test
 
 This parser implements key-value pair and section parsing inspired by the [EditorConfig File Format Specification](https://spec.editorconfig.org/#file-format).
 
-The parser also allows for inline comments and handles multiline values.
-
 - **Comments** start with `;` or `#` (inline comments are ignored at the end of a value).
-- **Section headers** start with `[` and end with a `]`.
-- **Key-Value Pair** contains a key and a value, separated by an `=`.
+- **Section headers** start with `[` and end with a `]`. Properties defined before any section header are assigned to the `"global"` section.
+- **Key-Value Pairs** contain a key and a value separated by `=`.
+- **Multiline values** use a trailing backslash (`\`) at the end of the line to continue onto the next line (leading indentation on subsequent lines is stripped):
 
-The parsed values are stored in an **`IniFile`** object, which is returned by the `parse` method. The `IniFile` object encapsulates the configuration data and provides a method (`getValue(String section, String key)`) for retrieval.
+```ini
+[service]
+description = Background indexing service \
+  responsible for ingesting INI files \
+  and sorting key pairs
+threads = 4
+```
+
+The parsed values are stored in an **`IniFile`** object returned by `Iniparser.parse(filepath)`. Retrieve values using `inifile.getValue(String section, String key)`.
