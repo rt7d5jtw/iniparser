@@ -3,31 +3,29 @@ package org.iniparser;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.util.Arrays;
-import java.util.ArrayList;
 import java.io.IOException;
+import java.util.ArrayList;
 
 public class Iniparser {
   private String src = null;
   private int cursor = 0;
-  private int line   = 0;
+  private int line   = 1;
   private String currentSection = "global";
 
   /**
    * Parses the INI file contents read from the given filepath.
    * @param filepath The path to the INI file.
-   * @return An Optional containing the fully parsed IniFile object.
-   * @throws IOException If the file cannot be read.
+   * @return The fully parsed IniFile object.
+   * @throws IOException If the file cannot be read or contains a syntax error.
    */
   public IniFile parse(String filepath) throws IOException {
-    String fileSrc = readTextFile(filepath);
-
-    this.src    = fileSrc;
+    this.src = readTextFile(filepath);
     this.cursor = 0;
+    this.line = 1;
 
-    ArrayList<String> sections = new ArrayList<String>();
-    ArrayList<String> keys     = new ArrayList<String>();
-    ArrayList<String> values   = new ArrayList<String>();
+    ArrayList<String> sectionList = new ArrayList<String>();
+    ArrayList<String> keyList     = new ArrayList<String>();
+    ArrayList<String> valueList   = new ArrayList<String>();
 
     skipWhitespace();
 
@@ -42,21 +40,24 @@ public class Iniparser {
           this.cursor++;
           StringBuilder sectionBuilder = new StringBuilder();
 
-          while (!isAtEOF() && peek() != ']') {
+          while (!isAtEOF() && peek() != ']' && peek() != '\n') {
             sectionBuilder.append(peek());
             this.cursor++;
           }
 
-          String section = sectionBuilder.toString();
-          this.currentSection = section;
+          if (peek() != ']') {
+            throw new IOException("Syntax error in '" + filepath + "' at line " + this.line + ": Missing closing ']' for section header.");
+          }
 
-          if (!isAtEOF()) { this.cursor++; } // Move past the ']' character
+          this.currentSection = sectionBuilder.toString().trim();
+          this.cursor++; // Move past the ']' character
           break;
         }
         case ';':
         case '#': {
           skipComment();
           if (!isAtEOF()) { this.cursor++; } // Move cursor out of the comment
+          break;
         }
         /* WHITESPACE */
         case ' ':
@@ -67,80 +68,73 @@ public class Iniparser {
           break;
         }
         default: {
-          if (Character.isLetter(peek())) {
-            readKVPair(sections, keys, values);
+          if (Character.isLetterOrDigit(peek()) || peek() == '.') {
+            readKVPair(sectionList, keyList, valueList);
           } else {
-            this.cursor++; // advance to avoid infinite loop
+            throw new IOException("Syntax error in '" + filepath + "' at line " + this.line + ": Unexpected character '" + peek() + "'.");
           }
         }
       }
     }
 
-    int sectionSize = sections.size();
-    int[] indexes = new int[sectionSize];
-    for (int idx = 0; idx < sectionSize; idx += 1) {
-      indexes[idx] = idx;
+    int entryCount = sectionList.size();
+    int[] sortIndexes = new int[entryCount];
+    for (int idx = 0; idx < entryCount; idx += 1) {
+      sortIndexes[idx] = idx;
     }
 
     // Sort the arrays
-    int startIndex = 0;
-    int endIndex   = sections.size() - 1;
-    quicksort(startIndex, endIndex, sections, keys, indexes);
-
-    // Fill the fixed-length arrays
-    String[] sectionsArray = new String[sectionSize];
-    String[] keysArray     = new String[sectionSize];
-    String[] valuesArray   = new String[sectionSize];
-
-    for (int idx = 0; idx < sectionSize; idx += 1) {
-      int sortedIndex = indexes[idx];
-
-      String section = sections.get(sortedIndex);
-      String key     = keys.get(sortedIndex);
-      String value   = values.get(sortedIndex);
-
-      sectionsArray[idx] = section;
-      keysArray[idx]     = key;
-      valuesArray[idx]   = value;
+    if (entryCount > 0) {
+      quicksort(0, entryCount - 1, sectionList, keyList, sortIndexes);
     }
 
-   // Reset the state of the parser
+    // Fill the fixed-length arrays
+    String[] sectionsArray = new String[entryCount];
+    String[] keysArray     = new String[entryCount];
+    String[] valuesArray   = new String[entryCount];
+
+    for (int idx = 0; idx < entryCount; idx += 1) {
+      int sortedIndex = sortIndexes[idx];
+
+      sectionsArray[idx] = sectionList.get(sortedIndex);
+      keysArray[idx]     = keyList.get(sortedIndex);
+      valuesArray[idx]   = valueList.get(sortedIndex);
+    }
+
+    // Reset the state of the parser
     this.reset();
 
-    IniFile result = new IniFile(sectionsArray, keysArray, valuesArray);
-    return result;
+    return new IniFile(sectionsArray, keysArray, valuesArray);
   }
 
   public String readTextFile(String filepath) throws IOException {
     File file = new File(filepath);
+    if (!file.exists() || !file.isFile()) {
+      throw new IOException("Failed to read INI file: '" + filepath + "' does not exist or is not a valid file.");
+    }
+
     StringBuilder stringBuilder = new StringBuilder();
-    String fileSource     = null;
-    FileReader fileReader = null;
     BufferedReader reader = null;
     String lineSeparator  = System.getProperty("line.separator");
-    String line;
+    String currentLine;
 
     try {
-      fileReader = new FileReader(file);
-      reader     = new BufferedReader(fileReader);
+      reader = new BufferedReader(new FileReader(file));
 
-      while ((line = reader.readLine()) != null) {
-        stringBuilder.append(line).append(lineSeparator);
+      while ((currentLine = reader.readLine()) != null) {
+        stringBuilder.append(currentLine).append(lineSeparator);
       }
-
-      fileSource = stringBuilder.toString();
-
     } finally {
       if (reader != null) {
         try {
           reader.close();
         } catch (IOException ioexception) {
-          System.err.println("Failed to close the BufferedReader!");
+          System.err.println("Warning: Failed to safely close the file reader for '" + filepath + "'.");
         }
       }
     }
 
-    return fileSource;
+    return stringBuilder.toString();
   }
 
   public void skipWhitespace() {
@@ -159,13 +153,14 @@ public class Iniparser {
     }
   }
 
-  public void readKVPair(ArrayList<String> sections, ArrayList<String> keys, ArrayList<String> values) {
+  public void readKVPair(ArrayList<String> sectionList, ArrayList<String> keyList, ArrayList<String> valueList) throws IOException {
     StringBuilder keyBuilder   = new StringBuilder();
     StringBuilder valueBuilder = new StringBuilder();
+    boolean foundEquals = false;
 
     while (!isAtEOF() && peek() != '\n') {
       // Read the key
-      while (!isAtEOF() && peek() != '=') {
+      while (!isAtEOF() && peek() != '=' && peek() != '\n') {
         if (!Character.isWhitespace(peek())) {
           keyBuilder.append(peek());
         }
@@ -174,20 +169,23 @@ public class Iniparser {
 
       // Read the value
       if (!isAtEOF() && peek() == '=') {
+        foundEquals = true;
         this.cursor++; // Move cursor from `=`
         skipWhitespace(); // Skip any possible left side whitespace
+
         while (!isAtEOF() && peek() != '\n') {
           // backlash means multi-line strings
-          if (peek() == '\\')
-          {
-            this.cursor += 2; // lets move from '\' and newline
-            skipWhitespace(); // lets skip whitespace until we find a character
+          if (peek() == '\\') {
+            this.cursor += 2; // move past '\' and newline
+            this.line++;      // account for the newline character bypassed
+            skipWhitespace(); // skip whitespace until we find a character on the new line
+            continue;
           }
           // Skip comments
           if (peek() == ';' || peek() == '#') {
             skipComment();
-          }
-          else {
+            break;
+          } else {
             valueBuilder.append(peek());
           }
           this.cursor++;
@@ -195,15 +193,16 @@ public class Iniparser {
         break;
       }
 
-      if (!isAtEOF()) { this.cursor++; }
+      if (!isAtEOF() && peek() != '\n') { this.cursor++; }
     }
 
-    String key   = keyBuilder.toString();
-    String value = valueBuilder.toString().trim();
+    if (!foundEquals) {
+      throw new IOException("Syntax error at line " + this.line + ": Key-value pair '" + keyBuilder.toString() + "' is missing an '=' character.");
+    }
 
-    sections.add(this.currentSection);
-    keys.add(key);
-    values.add(value);
+    sectionList.add(this.currentSection);
+    keyList.add(keyBuilder.toString());
+    valueList.add(valueBuilder.toString().trim());
   }
 
   public char peekAhead() {
@@ -253,8 +252,8 @@ public class Iniparser {
   public void quicksort(
       int startIndex,
       int endIndex,
-      ArrayList<String> sectionArray,
-      ArrayList<String> keyArray,
+      ArrayList<String> sectionList,
+      ArrayList<String> keyList,
       int[] indexes
       )
   {
@@ -264,35 +263,34 @@ public class Iniparser {
     }
 
     int midpoint = ((startIndex + endIndex) / 2);
-    int pivotIndex = medianOfThree(sectionArray, indexes, startIndex, midpoint, endIndex);
-    String pivotValue = sectionArray.get(indexes[pivotIndex]);
+    int pivotIndex = medianOfThree(sectionList, indexes, startIndex, midpoint, endIndex);
 
-    int temporaryIndex = indexes[endIndex];
+    int tempPivotSwap = indexes[endIndex];
     indexes[endIndex] = indexes[pivotIndex];
-    indexes[pivotIndex] = temporaryIndex;
+    indexes[pivotIndex] = tempPivotSwap;
 
     // prefetch pivot strings
-    String pivotSection = sectionArray.get(indexes[endIndex]);
-    String pivotKey     = keyArray.get(indexes[endIndex]);
+    String pivotSection = sectionList.get(indexes[endIndex]);
+    String pivotKey     = keyList.get(indexes[endIndex]);
 
     int boundaryIndex = startIndex;
     for (int scannerIndex = startIndex; scannerIndex < endIndex; scannerIndex += 1)
     {
-      String currentSection = sectionArray.get(indexes[scannerIndex]);
+      String currentSection = sectionList.get(indexes[scannerIndex]);
       int sectionComparison = currentSection.compareTo(pivotSection);
 
       int keyComparison      = 0;
-      boolean keyPrecesPivot = false;
+      boolean keyPrecedesPivot = false;
 
       // Same section, calculate key comparison
       if (sectionComparison == 0)
       {
-        String currentKey = keyArray.get(indexes[scannerIndex]);
+        String currentKey = keyList.get(indexes[scannerIndex]);
         keyComparison     = currentKey.compareTo(pivotKey);
-        keyPrecesPivot    = (keyComparison < 0);
+        keyPrecedesPivot  = (keyComparison < 0);
       }
 
-      if (sectionComparison < 0 || keyPrecesPivot)
+      if (sectionComparison < 0 || keyPrecedesPivot)
       {
         int boundary = indexes[boundaryIndex];
         indexes[boundaryIndex] = indexes[scannerIndex];
@@ -301,11 +299,11 @@ public class Iniparser {
       }
     }
 
-    int tmpPivotIndex = indexes[endIndex];
+    int tempBoundarySwap = indexes[endIndex];
     indexes[endIndex] = indexes[boundaryIndex];
-    indexes[boundaryIndex] = tmpPivotIndex;
+    indexes[boundaryIndex] = tempBoundarySwap;
 
-    quicksort(startIndex, boundaryIndex - 1, sectionArray, keyArray, indexes);
-    quicksort(boundaryIndex + 1, endIndex, sectionArray, keyArray, indexes);
+    quicksort(startIndex, boundaryIndex - 1, sectionList, keyList, indexes);
+    quicksort(boundaryIndex + 1, endIndex, sectionList, keyList, indexes);
   }
 }
