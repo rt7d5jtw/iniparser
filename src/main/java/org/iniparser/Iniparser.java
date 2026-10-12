@@ -56,7 +56,8 @@ public class Iniparser {
         case ';':
         case '#': {
           skipComment();
-          if (!isAtEOF()) { this.cursor++; } // Move cursor out of the comment
+          // We intentionally do NOT advance the cursor past the '\n' here,
+          // so the main loop catches it and increments this.line correctly.
           break;
         }
         /* WHITESPACE */
@@ -148,7 +149,7 @@ public class Iniparser {
   }
 
   public void skipComment() {
-    while (!isAtEOF() && peekAhead() != '\n' && peekAhead() != '\0') {
+    while (!isAtEOF() && peek() != '\n') {
       this.cursor++;
     }
   }
@@ -177,7 +178,7 @@ public class Iniparser {
           // backlash means multi-line strings
           if (peek() == '\\') {
             this.cursor += 2; // move past '\' and newline
-            this.line++;      // account for the newline character bypassed
+            this.line++; // account for the newline character bypassed
             skipWhitespace(); // skip whitespace until we find a character on the new line
             continue;
           }
@@ -203,11 +204,6 @@ public class Iniparser {
     sectionList.add(this.currentSection);
     keyList.add(keyBuilder.toString());
     valueList.add(valueBuilder.toString().trim());
-  }
-
-  public char peekAhead() {
-    if (this.cursor + 1 >= this.src.length()) { return '\0'; } // Prevents out-of-bounds on last char
-    return this.src.charAt(this.cursor + 1);
   }
 
   public char peek() {
