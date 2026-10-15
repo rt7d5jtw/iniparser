@@ -23,9 +23,9 @@ public class Iniparser {
     this.cursor = 0;
     this.line = 1;
 
-    ArrayList<String> sectionList = new ArrayList<String>();
-    ArrayList<String> keyList     = new ArrayList<String>();
-    ArrayList<String> valueList   = new ArrayList<String>();
+    ArrayList sectionList = new ArrayList();
+    ArrayList keyList     = new ArrayList();
+    ArrayList valueList   = new ArrayList();
 
     skipWhitespace();
 
@@ -38,7 +38,7 @@ public class Iniparser {
         }
         case '[': {
           this.cursor++;
-          StringBuilder sectionBuilder = new StringBuilder();
+          StringBuffer sectionBuilder = new StringBuffer();
 
           while (!isAtEOF() && peek() != ']' && peek() != '\n') {
             sectionBuilder.append(peek());
@@ -97,9 +97,9 @@ public class Iniparser {
     for (int idx = 0; idx < entryCount; idx += 1) {
       int sortedIndex = sortIndexes[idx];
 
-      sectionsArray[idx] = sectionList.get(sortedIndex);
-      keysArray[idx]     = keyList.get(sortedIndex);
-      valuesArray[idx]   = valueList.get(sortedIndex);
+      sectionsArray[idx] = (String) sectionList.get(sortedIndex);
+      keysArray[idx]     = (String) keyList.get(sortedIndex);
+      valuesArray[idx]   = (String) valueList.get(sortedIndex);
     }
 
     // Reset the state of the parser
@@ -114,7 +114,7 @@ public class Iniparser {
       throw new IOException("Failed to read INI file: '" + filepath + "' does not exist or is not a valid file.");
     }
 
-    StringBuilder stringBuilder = new StringBuilder();
+    StringBuffer stringBuilder = new StringBuffer();
     BufferedReader reader = null;
     String lineSeparator  = System.getProperty("line.separator");
     String currentLine;
@@ -154,9 +154,9 @@ public class Iniparser {
     }
   }
 
-  public void readKVPair(ArrayList<String> sectionList, ArrayList<String> keyList, ArrayList<String> valueList) throws IOException {
-    StringBuilder keyBuilder   = new StringBuilder();
-    StringBuilder valueBuilder = new StringBuilder();
+  public void readKVPair(ArrayList sectionList, ArrayList keyList, ArrayList valueList) throws IOException {
+    StringBuffer keyBuilder   = new StringBuffer();
+    StringBuffer valueBuilder = new StringBuffer();
     boolean foundEquals = false;
 
     while (!isAtEOF() && peek() != '\n') {
@@ -225,11 +225,11 @@ public class Iniparser {
     this.currentSection = "global";
   }
 
-  public int medianOfThree(ArrayList<String> array, int[] indexes, int index1, int index2, int index3)
+  public int medianOfThree(ArrayList array, int[] indexes, int index1, int index2, int index3)
   {
-    String value1 = array.get(indexes[index1]);
-    String value2 = array.get(indexes[index2]);
-    String value3 = array.get(indexes[index3]);
+    String value1 = (String) array.get(indexes[index1]);
+    String value2 = (String) array.get(indexes[index2]);
+    String value3 = (String) array.get(indexes[index3]);
 
     if (value1.compareTo(value2) >= 0 && value1.compareTo(value3) <= 0 ||
         value1.compareTo(value2) <= 0 && value1.compareTo(value3) >= 0)
@@ -248,8 +248,8 @@ public class Iniparser {
   public void quicksort(
       int startIndex,
       int endIndex,
-      ArrayList<String> sectionList,
-      ArrayList<String> keyList,
+      ArrayList sectionList,
+      ArrayList keyList,
       int[] indexes
       )
   {
@@ -266,13 +266,13 @@ public class Iniparser {
     indexes[pivotIndex] = tempPivotSwap;
 
     // prefetch pivot strings
-    String pivotSection = sectionList.get(indexes[endIndex]);
-    String pivotKey     = keyList.get(indexes[endIndex]);
+    String pivotSection = (String) sectionList.get(indexes[endIndex]);
+    String pivotKey     = (String) keyList.get(indexes[endIndex]);
 
     int boundaryIndex = startIndex;
     for (int scannerIndex = startIndex; scannerIndex < endIndex; scannerIndex += 1)
     {
-      String currentSection = sectionList.get(indexes[scannerIndex]);
+      String currentSection = (String) sectionList.get(indexes[scannerIndex]);
       int sectionComparison = currentSection.compareTo(pivotSection);
 
       int keyComparison      = 0;
@@ -281,7 +281,7 @@ public class Iniparser {
       // Same section, calculate key comparison
       if (sectionComparison == 0)
       {
-        String currentKey = keyList.get(indexes[scannerIndex]);
+        String currentKey = (String) keyList.get(indexes[scannerIndex]);
         keyComparison     = currentKey.compareTo(pivotKey);
         keyPrecedesPivot  = (keyComparison < 0);
       }
