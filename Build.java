@@ -51,6 +51,8 @@ public class Build
   // }}}
 
   // Constants {{{
+
+  public static final String TEST_FILE = "src/test/java/org/iniparser/AppTest.java";
   public static final String CLASSPATH_SEPARATOR = File.pathSeparator;
   public static final String LIBS = "lib/*";
   public static final String OUTPUT_DIR = "classes";
@@ -194,7 +196,7 @@ public class Build
       return exitCode.intValue() == 0;
 
     } catch (ClassNotFoundException classNotFoundException) {
-      System.err.println("[Warning] Missing javax.tools (Java 5 or earlier java version)");
+      // expected on Java 5 or earlier
       return false;
     } catch (Exception exception) {
       String exceptionMessage = exception.getMessage();
@@ -211,7 +213,7 @@ public class Build
     String[] compilerCommands = new String[] {
       "-cp", classpath,
       "-d", OUTPUT_DIR,
-      "src/test/java/org/iniparser/AppTest.java"
+      TEST_FILE
     };
 
     boolean testCompiled = tryCompileWithJavaCompilerApi(compilerCommands);
@@ -223,7 +225,7 @@ public class Build
       processCommands.add(classpath);
       processCommands.add("-d");
       processCommands.add(OUTPUT_DIR);
-      processCommands.add("src/test/java/org/iniparser/AppTest.java");
+      processCommands.add(TEST_FILE);
 
       String[] cmdArray = new String[processCommands.size()];
       for (int idx = 0; idx < processCommands.size(); idx += 1)
@@ -258,10 +260,13 @@ public class Build
       println("Test files successfully compiled");
     }
 
+    // Select the appropriate test runner based on the Java version
+    String testRunnerClass = isLegacyJava() ? "junit.textui.TestRunner" : "org.junit.runner.JUnitCore";
+
     String[] testRunCommands = new String[] {
       "java",
       "-cp", classpath,
-      "org.junit.runner.JUnitCore",
+      testRunnerClass,
       "org.iniparser.AppTest"
     };
 
@@ -288,6 +293,12 @@ public class Build
     }
   };
 
+  public static boolean isLegacyJava()
+  {
+    String specVersion = System.getProperty("java.specification.version");
+    return specVersion != null && (specVersion.startsWith("1.3") || specVersion.startsWith("1.4"));
+  }
+
   public static String getTestClasspath()
   {
     StringBuffer classpath = new StringBuffer(OUTPUT_DIR);
@@ -303,6 +314,18 @@ public class Build
           File file = (File) files[idx];
           if (file.getName().endsWith(".jar"))
           {
+            String fileName = file.getName();
+
+            // Prevent loading JUnit 4 on legacy Java, and vice versa
+            if (isLegacyJava() && fileName.indexOf("junit-4") != -1)
+            {
+              continue;
+            }
+            if (!isLegacyJava() && fileName.indexOf("junit-3") != -1)
+            {
+              continue;
+            }
+
             classpath
               .append(CLASSPATH_SEPARATOR)
               .append(file.getPath());

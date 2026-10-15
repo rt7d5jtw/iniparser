@@ -2,24 +2,20 @@ package org.iniparser;
 
 import java.io.IOException;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-
-import org.junit.Before;
-import org.junit.Test;
+import junit.framework.TestCase;
 
 /**
  * Unit tests for simple ini file parsing.
- * Made to be Java 5 compatible (no java.nio.file, try-with-resources, or Optionals).
+ * Made to be Java 3 and JUnit 3.8.1 compatible.
+ * NOTE: In JUnit 3, tests are identified by the "test" method prefix
  */
-public class AppTest {
+public class AppTest extends TestCase {
 
     private Iniparser iniparser;
 
-    @Before
-    public void setUp() {
-        // Instantiate new parser before every test
+    // Overrides JUnit 3's setup method
+    protected void setUp() throws Exception {
+        super.setUp();
         iniparser = new Iniparser();
     }
 
@@ -36,7 +32,6 @@ public class AppTest {
         }
     }
 
-    @Test
     public void testParseStandardIni() {
         IniFile inifile = safeParse("test-files/test.ini");
         assertNotNull("IniFile should not be null", inifile);
@@ -53,7 +48,6 @@ public class AppTest {
         assertEquals("March of the Microbes: Sighting the Unseen", inifile.getValue("author", "book"));
     }
 
-    @Test
     public void testParseMeowIni() {
         IniFile inifile = safeParse("test-files/meow.ini");
         assertNotNull(inifile);
@@ -67,7 +61,6 @@ public class AppTest {
         assertEquals("mike", inifile.getValue("tasks", "student"));
     }
 
-    @Test
     public void testParseTest2Ini() {
         IniFile inifile = safeParse("test-files/test2.ini");
         assertNotNull(inifile);
@@ -83,7 +76,6 @@ public class AppTest {
         assertEquals("\"payroll.dat\"", inifile.getValue("database", "file"));
     }
 
-    @Test
     public void testSortingStressIni() {
         IniFile inifile = safeParse("test-files/sorting_stress.ini");
         assertNotNull(inifile);
@@ -100,7 +92,6 @@ public class AppTest {
         assertEquals("30", inifile.getValue("network", "timeout"));
     }
 
-    @Test
     public void testEditorConfigIni() {
         IniFile inifile = safeParse("test-files/editorconfig.ini");
         assertNotNull(inifile);
@@ -119,7 +110,6 @@ public class AppTest {
         assertEquals("80", inifile.getValue("*.md", "max_line_length"));
     }
 
-    @Test
     public void testMultilineAndEdgeCasesIni() {
         IniFile inifile = safeParse("test-files/multiline_and_edge_cases.ini");
         assertNotNull(inifile);
