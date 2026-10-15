@@ -350,10 +350,19 @@ public class Build
     String javaSpec      = System.getProperty("java.specification.version");
     String javaVMname    = System.getProperty("java.vm.name");
     String javaVMVersion = System.getProperty("java.vm.version");
+    String osName        = System.getProperty("os.name");
+    String osVersion     = System.getProperty("os.version");
+    String osArch        = System.getProperty("os.arch");
 
     StringBuffer stringBuilderJavaInfo = new StringBuffer();
     stringBuilderJavaInfo.append("[COMPILATION] Compilation successful with\n");
-    stringBuilderJavaInfo.append("Java version: ");
+    stringBuilderJavaInfo.append("OS name: ");
+    stringBuilderJavaInfo.append(osName);
+    stringBuilderJavaInfo.append("\nOS Version: ");
+    stringBuilderJavaInfo.append(osVersion);
+    stringBuilderJavaInfo.append("\nOS Architecture: ");
+    stringBuilderJavaInfo.append(osArch);
+    stringBuilderJavaInfo.append("\nJava version: ");
     stringBuilderJavaInfo.append(javaVersion);
     stringBuilderJavaInfo.append("\nJava specification: ");
     stringBuilderJavaInfo.append(javaSpec);

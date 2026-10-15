@@ -39,10 +39,10 @@ public class AppTest extends TestCase {
         assertEquals("6", inifile.getValue("protocol", "version"));
         
         // Tests space stripping around '=' and ignoring inline comments
-        assertEquals("Bob Smith", inifile.getValue("user", "name"));
+        assertEquals("Bob Smith",     inifile.getValue("user", "name"));
         assertEquals("bob@smith.com", inifile.getValue("user", "email"));
-        assertEquals("true", inifile.getValue("user", "active"));
-        assertEquals("3.14159", inifile.getValue("user", "pi"));
+        assertEquals("true",          inifile.getValue("user", "active"));
+        assertEquals("3.14159",       inifile.getValue("user", "pi"));
         
         assertEquals("John L. Ingraham", inifile.getValue("author", "name"));
         assertEquals("March of the Microbes: Sighting the Unseen", inifile.getValue("author", "book"));
@@ -86,7 +86,7 @@ public class AppTest extends TestCase {
         
         // Tests alphabetization of keys
         assertEquals("first", inifile.getValue("alpha", "alpha"));
-        assertEquals("last", inifile.getValue("alpha", "zeta"));
+        assertEquals("last",  inifile.getValue("alpha", "zeta"));
         assertEquals("third", inifile.getValue("alpha", "gamma"));
         
         assertEquals("30", inifile.getValue("network", "timeout"));
@@ -125,5 +125,55 @@ public class AppTest extends TestCase {
 
         assertEquals("/healthz", inifile.getValue("endpoints", "health_check"));
         assertEquals("/api/v1", inifile.getValue("endpoints", "api_v1"));
+    }
+
+    /**
+     * Tests parsing a UTF-16 LE file that begins with a BOM (FF FE).
+     *
+     * A parser that reads the file as Latin-1/UTF-8 will see the BOM as
+     * garbage and every following ASCII character as NUL-separated bytes,
+     * so the very first section header will look like "\uFEFF[general]"
+     * (or worse) and lookups by the plain name will fail.
+     */
+    public void testParseUtf16LeBomIni() {
+        IniFile inifile = safeParse("test-files/bom_utf16le.ini");
+        assertNotNull("IniFile should not be null", inifile);
+
+        // If the BOM leaks into the first section name, this returns null.
+        assertEquals("Bom Test", inifile.getValue("general", "name"));
+        assertEquals("1.0",      inifile.getValue("general", "version"));
+
+        // Sections appended after the original content (CRLF line endings)
+        assertEquals("localhost", inifile.getValue("database", "host"));
+        assertEquals("5432",      inifile.getValue("database", "port"));
+
+        // Backslashes in values (Java string "C:\\Users\\test" is C:\Users\test)
+        assertEquals("C:\\Users\\test", inifile.getValue("paths", "home"));
+
+        // Non-ASCII characters survived the UTF-16LE decoding: "Caf\u00e9 \u20ac" is "Café €"
+        assertEquals("Caf\u00e9 \u20ac", inifile.getValue("paths", "name"));
+
+        // Empty section must not produce keys
+        assertNull("Empty section should have no keys", inifile.getValue("empty", "key"));
+
+        // Whitespace around '=' and the trailing space should be trimmed
+        assertEquals("value with spaces", inifile.getValue("last", "key"));
+
+        // The comment line must not be parsed as a key
+        assertNull("Comment should not become a key", inifile.getValue("database", "; comment line"));
+    }
+
+    /**
+     * Same as above but for UTF-16 BE with BOM (FE FF).
+     * The two files share identical logical content, so the assertions
+     * are deliberately parallel — a parser that hard-codes one
+     * endianness will pass one test and fail the other.
+     */
+    public void testParseUtf16BeBomIni() {
+        IniFile inifile = safeParse("test-files/bom_utf16be.ini");
+        assertNotNull("IniFile should not be null", inifile);
+
+        assertEquals("Bom Test", inifile.getValue("general", "name"));
+        assertEquals("1.0",      inifile.getValue("general", "version"));
     }
 }

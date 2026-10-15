@@ -1,7 +1,12 @@
 package org.iniparser;
 
+import java.io.InputStream;
+import java.io.FileInputStream;
+import java.io.PushbackInputStream;
+import java.io.InputStreamReader;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.Reader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -11,6 +16,18 @@ public class Iniparser {
   private int cursor = 0;
   private int line   = 1;
   private String currentSection = "global";
+
+  private static final int[][] BOMS = {
+          { 0xEF, 0xBB, 0xBF }, // UTF-8
+          { 0xFE, 0xFF },       // UTF-16BE
+          { 0xFF, 0xFE }        // UTF-16LE
+  };
+
+  private static final String[] ENCODING_NAMES = {
+          "UTF-8",
+          "UTF-16BE",
+          "UTF-16LE"
+  };
 
   /**
    * Parses the INI file contents read from the given filepath.
@@ -115,20 +132,35 @@ public class Iniparser {
     }
 
     StringBuffer stringBuilder = new StringBuffer();
-    BufferedReader reader = null;
-    String lineSeparator  = System.getProperty("line.separator");
+    InputStream fileStream     = null;
     String currentLine;
 
     try {
-      reader = new BufferedReader(new FileReader(file));
+      fileStream = new FileInputStream(file);
+      // pushback buffer must be at least as large as the longest BOM (3 bytes)
+      PushbackInputStream pushbackStream = new PushbackInputStream((fileStream), 3);
+      String encodingName = detectAndSkipBOM(pushbackStream);
+      Reader decoder;
 
-      while ((currentLine = reader.readLine()) != null) {
-        stringBuilder.append(currentLine).append(lineSeparator);
+      if (encodingName != null)
+      {
+        decoder = new InputStreamReader(pushbackStream, encodingName);
+      }
+      else
+      {
+        // No BOM
+        decoder = new InputStreamReader(pushbackStream);
+      }
+
+      BufferedReader reader = new BufferedReader(decoder);
+      while ((currentLine = reader.readLine()) != null)
+      {
+        stringBuilder.append(currentLine).append('\n');
       }
     } finally {
-      if (reader != null) {
+      if (fileStream != null) {
         try {
-          reader.close();
+          fileStream.close();
         } catch (IOException ioexception) {
           System.err.println("Warning: Failed to safely close the file reader for '" + filepath + "'.");
         }
@@ -176,7 +208,7 @@ public class Iniparser {
 
         while (!isAtEOF() && peek() != '\n') {
           // backlash means multi-line strings
-          if (peek() == '\\') {
+          if (peek() == '\\' && peekAhead() == '\n') {
             this.cursor += 2; // move past '\' and newline
             this.line++; // account for the newline character bypassed
             skipWhitespace(); // skip whitespace until we find a character on the new line
@@ -209,6 +241,21 @@ public class Iniparser {
   public char peek() {
     if (isAtEOF()) { return '\0'; }
     return this.src.charAt(this.cursor);
+  }
+
+  public char peekAhead()
+  {
+    if (isAtEOF())
+    {
+      return '\0';
+    }
+
+    if (cursor >= this.src.length())
+    {
+      return '\0';
+    }
+
+    return this.src.charAt(this.cursor + 1);
   }
 
   public boolean isAtEOF() {
@@ -301,5 +348,64 @@ public class Iniparser {
 
     quicksort(startIndex, boundaryIndex - 1, sectionList, keyList, indexes);
     quicksort(boundaryIndex + 1, endIndex, sectionList, keyList, indexes);
+  }
+
+  public static String detectAndSkipBOM(PushbackInputStream inputStream) throws IOException
+  {
+    int maxBOMLength = 3;
+    byte[] headerBuffer = new byte[maxBOMLength];
+
+    int bytesRead = 0;
+    while (bytesRead < headerBuffer.length)
+    {
+      int bytesInThisRead = inputStream.read(headerBuffer, bytesRead, headerBuffer.length - bytesRead);
+      if (bytesInThisRead < 0)
+      {
+        break;
+      }
+
+      bytesRead += bytesInThisRead;
+    }
+
+    // find the first BOM signature that matches the start of the buffer
+    int matchedBOMIndex= -1;
+    for (int bomIndex = 0; bomIndex < BOMS.length && matchedBOMIndex < 0; bomIndex += 1)
+    {
+      if (matches(headerBuffer, bytesRead, BOMS[bomIndex]))
+      {
+        matchedBOMIndex = bomIndex;
+      }
+    }
+
+    boolean bomFound = (matchedBOMIndex >= 0);
+    int bomLength = bomFound ? BOMS[matchedBOMIndex].length : 0;
+    int bytesToPushBack = bytesRead - bomLength;
+    if (bytesToPushBack > 0)
+    {
+      inputStream.unread(headerBuffer, bomLength, bytesToPushBack);
+    }
+
+    return bomFound ? ENCODING_NAMES[matchedBOMIndex] : null;
+  }
+
+  private static boolean matches(byte[] buffer, int bytesRead, int[] BOMSignature)
+  {
+    if (bytesRead < BOMSignature.length)
+    {
+      return false;
+    }
+
+    for (int idx = 0; idx < BOMSignature.length; idx += 1)
+    {
+      int actualByte   = buffer[idx] & 0xFF;
+      int expectedByte = BOMSignature[idx];
+
+      if (actualByte != expectedByte)
+      {
+        return false;
+      }
+    }
+
+    return true;
   }
 }
