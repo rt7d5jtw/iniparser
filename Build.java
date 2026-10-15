@@ -211,7 +211,7 @@ public class Build
   {
     String classpath = getTestClasspath();
     String[] compilerCommands = new String[] {
-      "-cp", classpath,
+      "-classpath", classpath,
       "-d", OUTPUT_DIR,
       TEST_FILE
     };
@@ -221,7 +221,7 @@ public class Build
     {
       ArrayList processCommands = new ArrayList();
       processCommands.add("javac");
-      processCommands.add("-cp");
+      processCommands.add("-classpath");
       processCommands.add(classpath);
       processCommands.add("-d");
       processCommands.add(OUTPUT_DIR);
@@ -265,7 +265,7 @@ public class Build
 
     String[] testRunCommands = new String[] {
       "java",
-      "-cp", classpath,
+      "-classpath", classpath,
       testRunnerClass,
       "org.iniparser.AppTest"
     };
