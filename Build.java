@@ -11,6 +11,19 @@ import java.util.ArrayList;
 public class Build
 {
 
+  // Constants {{{
+  public static final String CLASSPATH_SEPARATOR = File.pathSeparator;
+  public static final String TEST_FILE           = "src/test/java/org/iniparser/AppTest.java";
+  public static final String TEST_PACKAGE_NAME   = "org.iniparser.AppTest";
+  public static final String JUNIT3_TESTRUNNER   = "junit.textui.TestRunner";
+  public static final String LIBS                = "lib/*";
+  public static final String OUTPUT_DIR          = "classes";
+  public static final String[] SOURCE_FILES = {
+    "src/main/java/org/iniparser/Iniparser.java",
+    "src/main/java/org/iniparser/IniFile.java"
+  };
+  // }}}
+
   /* A Class to read input stream into an output stream from another process for Java 6 Compatibility */
   // StreamGobbler {{{
   private static class StreamGobbler extends Thread
@@ -48,18 +61,6 @@ public class Build
       }
     }
   }
-  // }}}
-
-  // Constants {{{
-
-  public static final String TEST_FILE = "src/test/java/org/iniparser/AppTest.java";
-  public static final String CLASSPATH_SEPARATOR = File.pathSeparator;
-  public static final String LIBS = "lib/*";
-  public static final String OUTPUT_DIR = "classes";
-  public static final String[] SOURCE_FILES = {
-    "src/main/java/org/iniparser/Iniparser.java",
-    "src/main/java/org/iniparser/IniFile.java"
-  };
   // }}}
 
   public static void main(String[] args) throws Exception
@@ -260,14 +261,11 @@ public class Build
       println("Test files successfully compiled");
     }
 
-    // Select the appropriate test runner based on the Java version
-    String testRunnerClass = isLegacyJava() ? "junit.textui.TestRunner" : "org.junit.runner.JUnitCore";
-
     String[] testRunCommands = new String[] {
       "java",
       "-classpath", classpath,
-      testRunnerClass,
-      "org.iniparser.AppTest"
+      JUNIT3_TESTRUNNER,
+      TEST_PACKAGE_NAME
     };
 
     Process process = Runtime.getRuntime().exec(testRunCommands);
@@ -315,17 +313,6 @@ public class Build
           if (file.getName().endsWith(".jar"))
           {
             String fileName = file.getName();
-
-            // Prevent loading JUnit 4 on legacy Java, and vice versa
-            if (isLegacyJava() && fileName.indexOf("junit-4") != -1)
-            {
-              continue;
-            }
-            if (!isLegacyJava() && fileName.indexOf("junit-3") != -1)
-            {
-              continue;
-            }
-
             classpath
               .append(CLASSPATH_SEPARATOR)
               .append(file.getPath());
