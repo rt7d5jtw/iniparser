@@ -58,7 +58,8 @@ mvn test
 
 This parser implements key-value pair and section parsing inspired by the [EditorConfig File Format Specification](https://spec.editorconfig.org/#file-format).
 
-- **Encoding & BOM**: Supports UTF-8, UTF-16BE, and UTF-16LE with automatic Byte Order Mark (BOM) detection and stripping.
+- **Encoding & BOM**: Supports UTF-8, UTF-16BE, and UTF-16LE with automatic Byte Order Mark (BOM) detection and stripping. Files without a BOM default to UTF-8.
+- **Legacy Encodings**: To parse older files lacking a BOM (such as Windows-1252 or ISO-8859-1), pass the desired charset explicitly using the overloaded method: `Iniparser.parse(filepath, "Cp1252")`.
 - **Comments** start with `;` or `#` (inline comments are ignored at the end of a value).
 - **Section headers** start with `[` and end with a `]`. Properties defined before any section header are assigned to the `"global"` section.
 - **Key-Value Pairs** contain a key and a value separated by `=`.
