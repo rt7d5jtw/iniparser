@@ -29,14 +29,20 @@ public class Iniparser {
           "UTF-16LE"
   };
 
+  private static final String DEFAULT_ENCODING = "UTF-8";
+
+  public IniFile parse(String filepath) throws IOException {
+    return parse(filepath, DEFAULT_ENCODING);
+  }
+
   /**
    * Parses the INI file contents read from the given filepath.
    * @param filepath The path to the INI file.
    * @return The fully parsed IniFile object.
    * @throws IOException If the file cannot be read or contains a syntax error.
    */
-  public IniFile parse(String filepath) throws IOException {
-    this.src = readTextFile(filepath);
+  public IniFile parse(String filepath, String encoding) throws IOException {
+    this.src = readTextFile(filepath, encoding);
     this.cursor = 0;
     this.line = 1;
 
@@ -125,7 +131,7 @@ public class Iniparser {
     return new IniFile(sectionsArray, keysArray, valuesArray);
   }
 
-  public String readTextFile(String filepath) throws IOException {
+  public String readTextFile(String filepath, String encoding) throws IOException {
     File file = new File(filepath);
     if (!file.exists() || !file.isFile()) {
       throw new IOException("Failed to read INI file: '" + filepath + "' does not exist or is not a valid file.");
@@ -149,7 +155,7 @@ public class Iniparser {
       else
       {
         // No BOM
-        decoder = new InputStreamReader(pushbackStream);
+        decoder = new InputStreamReader(pushbackStream, encoding);
       }
 
       BufferedReader reader = new BufferedReader(decoder);

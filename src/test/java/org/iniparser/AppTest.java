@@ -32,6 +32,16 @@ public class AppTest extends TestCase {
         }
     }
 
+    private IniFile safeParse(String filepath, String encoding) {
+        try {
+            System.out.println("Parsing file: " + filepath);
+            return iniparser.parse(filepath, encoding);
+        } catch (IOException ex) {
+            fail("File parsing failed due to IOException: " + ex.getMessage());
+            return null;
+        }
+    }
+
     public void testParseStandardIni() {
         IniFile inifile = safeParse("test-files/test.ini");
         assertNotNull("IniFile should not be null", inifile);
@@ -175,5 +185,26 @@ public class AppTest extends TestCase {
 
         assertEquals("Bom Test", inifile.getValue("general", "name"));
         assertEquals("1.0",      inifile.getValue("general", "version"));
+    }
+
+    public void testParseUtf8BomIni() {
+        IniFile inifile = safeParse("test-files/bom_utf8.ini");
+        assertNotNull("IniFile should not be null", inifile);
+        assertEquals("localhost", inifile.getValue("db", "host"));
+    }
+
+    public void testParseCP1252() {
+        String encoding = "Cp1252";
+        IniFile inifile = safeParse("test-files/francais.ini", encoding);
+        assertNotNull("IniFile should not be null", inifile);
+
+        String value1 = inifile.getValue("Paramètres", "ville");
+        assertEquals("Besançon", value1);
+
+        String value2 = inifile.getValue("Paramètres", "prix");
+        assertEquals("12 €", value2);
+
+        String value3 = inifile.getValue("Paramètres", "citation");
+        assertEquals("“Bonjour”", value3);
     }
 }
